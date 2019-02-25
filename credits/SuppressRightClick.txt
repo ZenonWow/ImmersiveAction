@@ -1,0 +1,75 @@
+Credits:
+--
+Maunotavast <SUPERLAUMAN LEGENDAT>
+https://worldofwarcraft.com/en-gb/character/zenedar/Maunotavast
+
+SuppressRightClick addon
+https://wow.curseforge.com/projects/src
+http://mods.curse.com/addons/wow/src
+git clone https://repos.curseforge.com/wow/src
+
+tynstar9  -  jens dot b at web dot de
+https://wow.curseforge.com/members/tynstar9
+
+Urzulan
+https://wow.curseforge.com/members/Urzulan
+
+
+
+
+https://www.curseforge.com/wow/addons/src?comment=3
+--
+Urzulan
+Posted Aug 10, 2015
+A tip is to allow right-double-click in combat to interact. If in dire need of interaction it's common to resort to click spam, which makes it work. This is the code I use in UrzUI:
+
+RightClickUpdateDelay = 0;
+WorldFrame:HookScript("OnMouseUp", function(self, button)
+      if ( UnitAffectingCombat("player") and ( button == "RightButton" ) and ( RightClickUpdateDelay < GetTime() )) then
+         RightClickUpdateDelay = GetTime()+0.3;
+         MouselookStop();
+      end
+end);
+
+Last edited by Urzulan: Aug 10, 2015
+
+
+
+
+https://eu.battle.net/forums/en/wow/topic/11761047149#post-4
+--
+Well, here's what possible:
+
+(run both macros once, in this order)
+/run local f=CreateFrame("button","mlook")f:RegisterForClicks("AnyDown","AnyUp")f:SetScript("OnClick",function(s,b,d)if d then MouselookStart()else MouselookStop()end end)SecureStateDriverManager:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
+/run local f=CreateFrame("frame",nil,nil,"SecureHandlerStateTemplate")RegisterStateDriver(f,"mov","[@mouseover,exists]1;0")f:SetAttribute("_onstate-mov","if newstate==1 then self:SetBindingClick(1,'BUTTON2','mlook')else self:ClearBindings()end")
+
+If it's to your liking, it's not too much trouble to turn into an addon (and possibly add an option to toggle it off)
+
+Bear in mind, you can't use right click to initiate auto attack or interact with npcs with this enabled, which I found quite frustrating. (I usually interact with the Interact w/ Mouseover bind anyways, which I've got bound on my mousewheel, so it's no problem for me)
+
+
+
+
+https://eu.battle.net/forums/en/wow/topic/11761047149#post-10
+--
+There is an addon called SuppressRightClick which makes the default right click action available on double right click instead of blocking it completely:
+http://mods.curse.com/addons/wow/src
+However, I did not like the behavior of this addon (in particular, it blocks right clicks only in combat, and therefore does not protect from accidental pulls), so I made a custom modification of that addon which always blocks single right clicks:
+local DoubleClickDuration = 0.3;
+local LastRightClick = 0;
+WorldFrame:HookScript("OnMouseUp", function(self, button)
+	if (not (MouselookHandler and MouselookHandler.shouldMouselook) and
+			button == "RightButton" and
+			LastRightClick + DoubleClickDuration < GetTime()) then
+		LastRightClick = GetTime();
+		MouselookStop();
+	end
+end);
+
+This code is also compatible with the MouselookHandler addon:
+http://mods.curse.com/addons/wow/mouselookhandler
+
+
+
+

@@ -1,0 +1,95 @@
+/run SetBinding('BUTTON4','CAMERAORSELECTORMOVE')
+/run SetBinding('BUTTON5','COMBATMODE_ENABLE')
+/run SetBinding('BUTTON5','COMBATMODE_TOGGLE')
+/run SetBinding('ALT-BUTTON1','CAMERAORSELECTORMOVE')
+/run SetBinding('ALT-BUTTON2','TURNORACTION')
+/run SetBinding('SHIFT-BUTTON1','STRAFELEFT') SetBinding('SHIFT-BUTTON2','STRAFERIGHT')
+
+
+Mode change:
+--
+CursorMode:  B1:Camera+B2:Turn, MoveAndSteer -> enable CameraMode
+CameraMode:  Camera (B1 / B1+B2) -> disable CameraMode
+
+CameraMode mouse button effect alternatives:
+--
+B1:Camera  (Mouselook off)  ->  target spell, cast targeted spell when released  ->  B1+B2:MoveAndSteer  |  B2+B1:Camera
+B1:Camera(look around, was not cursoring, disables CameraMode), B1+B2:MoveAndSteer, B2+B1:Cursor+Camera(look around, was cursoring before, not moving, disables CameraMode)
+
+B1:MoveAndSteer  (Mouselook remains on)  -> TODO test: B2+B1:Cursor+Camera + Target + B1 up -> cast?
+B1:MoveAndSteer, B1+B2:Camera(look around, stops Turn,moving, disables CameraMode), B2+B1:Cursor+Camera(look around, was cursoring before, not moving, disables CameraMode)
+
+No alternative:
+--
+B2:Cursor  (Mouselook off)  ->  target mouseover when released  ->  B2+B1:Camera
+
+-- B2:Turn  (Mouselook remains on)  --  pointless, same as not pressing
+-- Fix Cursor+Camera to MoveAndSteer? No, then cannot target spell.
+-- B1:MoveAndSteer, B1+B2:Move+Cursor(free cursor while moving? No can do, have to release B1:Camera for that.)
+
+
+Extra bindings:
+--
+Look around _while_ moving: Camera without TurnOrAction -> replace TurnOrAction with proper move binding MoveAndSteer (optionally MoveForward?)
+CursorMode:  MoveAndSteer + Camera
+CameraMode:  MoveAndSteer + Camera  -- TODO check: not halting movement when releasing Camera
+
+-- MoveAndSteer halts AutoRun
+AutoRun:     rebind MoveAndSteer to TurnOrAction  (delay until not InCombat)
+
+
+-- MoveAndSteer halts MoveForward, if I remember right. Minor annoyance when moving with keys and mouse at the same time, mouse will halt keypress.
+ImmersiveAction:  rebind MoveAndSteer to MoveForward  (delay until not InCombat)
+ImmersiveAction bindings with SecureHandler:
+-> Camera (B1 / B1+B2 -> disable CameraMode) won't rebind MoveForward to MoveAndSteer -> character will run straight, that's a problem.
+-> B1:Camera+B2:Turn, MoveAndSteer won't rebind MoveAndSteer to MoveForward -> AutoRun will halt, irrelevant in combat.
+Rebind MoveForward with MouselookOverrideBinding?
+
+-- MoveAndSteer turns on Mouselook, overrides itself to MoveForward, upon release Mouselook is handled by UpdateMouselook().
+-- MoveAndSteer state gets stuck and needs patching in CommandHooks.
+
+Alternative: avoid bliz mistaking the released binding by using MoveForward always
+and explicitly enabling Mouselook for MoveForward if GetMouseButtonClicked(), by mapping MoveForward to MoveAndSteer in :SetCommandState()
+
+
+
+
+Profiles:
+===
+
+MouseMove:
+--
+https://www.youtube.com/watch?v=u1OyYZn3fhU
+/run SetBinding('BUTTON1','CAMERAORSELECTORMOVE')
+/run SetBinding('BUTTON2','TURNORACTION')
+/run SetBinding('BUTTON4','STRAFELEFT')
+/run SetBinding('BUTTON5','STRAFERIGHT')
+/run SetBinding('ALT-BUTTON4','AUTORUN')
+/run SetBindingMacro('BUTTON3','/cast Rain Of Fire')
+/run SetBindingMacro('ALT-BUTTON3','/petmoveto')
+/run SetBindingMacro('MOUSEWHEELUP','/petattack')
+/run SetBindingMacro('MOUSEWHEELDOWN','/petpassive /petfollow')
+/run SetBindingItem('ALT-MOUSEWHEELDOWN','pvp trinket')
+/run SetBindingItem('ALT-MOUSEWHEELUP','racial freemove')
+/run SetBinding('CTRL-MOUSEWHEELUP','ZOOMOUT')
+/run SetBinding('CTRL-MOUSEWHEELDOWN','ZOOMIN')
+Move: BUTTON1+BUTTON2
+
+
+DAoC - Dark Age of Camelot:
+--
+/run SetBinding('BUTTON1','MOVEFORWARD')
+/run SetBinding('BUTTON2','MOVEBACKWARD')
+/run SetBinding('BUTTON4','STRAFELEFT')
+/run SetBinding('BUTTON5','STRAFERIGHT')
+
+
+Targeting
+--
+/run SetBinding('BUTTON1','TARGETNEARESTFRIEND')
+/run SetBinding('BUTTON2','TARGETNEARESTENEMY')
+
+TARGETLASTHOSTILE / TARGETLASTTARGET
+TARGETNEARESTENEMY / TARGETPREVIOUSENEMY / TARGETSCANENEMY
+TARGETNEARESTENEMYPLAYER / TARGETPREVIOUSENEMYPLAYER
+

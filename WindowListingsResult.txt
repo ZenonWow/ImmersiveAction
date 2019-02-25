@@ -1,0 +1,134 @@
+
+
+
+
+		CombatModeMod:
+
+
+	Listed in addon, but not in FrameXML UIPanelWindows/UISpecialFrames/UIMenus:
+
+BattlefieldFrame         VoiceMacroMenu           CoinPickupFrame          CraftFrame               OptionsFrame
+PaperDollFrame           PetPaperDollFrame        PetRenamePopup           PetStable                RaidFrame
+ReputationFrame          ScriptErrors             SkillFrame               SoundOptionsFrame        StackSplitFrame
+StatsFrame               SuggestFrame             TalentFrame              TalentTrainerFrame       TutorialFrame
+UIOptionsFrame           UnitPopup                CosmosMasterFrame        CosmosDropDown           ChooseItemsFrame
+ImprovedErrorFrame       TicTacToeFrame           OthelloFrame             MinesweeperFrame         GamesListFrame
+ConnectFrame             ChessFrame               QuestShareFrame          TotemStomperFrame        StaticPopup1
+StaticPopup2             StaticPopup3             StaticPopup4             DropDownList3            WantAds
+CosmosDropDownBis        InventoryManagerFrame    InspectPaperDollFrame    ContainerFrame1          ContainerFrame2
+ContainerFrame3          ContainerFrame4          ContainerFrame5          ContainerFrame6          ContainerFrame7
+ContainerFrame8          ContainerFrame9          ContainerFrame10         ContainerFrame11         ContainerFrame12
+ContainerFrame13         ContainerFrame14         ContainerFrame15         ContainerFrame16         ContainerFrame17
+AutoPotion_Template_Dialog  NxSocial              ARKINV_Frame1            WardrobeFrame            ACP_AddonList
+AccountantFrame          ImmersionFrame           BagnonFrameinventory     ElephantFrame            AdiBagsContainer1
+AdiBackpack              AdiBank                  GwCharacterWindow        GwCharacterWindowsMoverFrame  CinematicFrameCloseDialog
+MovieFrame.CloseDialog
+
+
+	Listed in FrameXML, but not the addon:
+
+ItemRefTooltip           ColorPickerFrame         ScrollOfResurrectionFrame  ScrollOfResurrectionSelectionFrame  CalendarContextMenu
+AudioOptionsFrame        PVPBannerFrame           PetStableFrame           PVPBannerFrame           QuestLogDetailFrame
+DressUpFrame             PetitionFrame            ItemTextFrame            RaidParentFrame          RaidBrowserFrame
+CinematicFrame           ChatConfigFrame          WorldStateScoreFrame     QuestChoiceFrame         ArchaeologyFrame
+BlackMarketFrame         CalendarFrame            GMSurveyFrame            GuildBankFrame           TransmogrifyFrame
+ItemSocketingFrame       ItemUpgradeFrame         ReforgingFrame           TokenFrame               VoidStorageFrame
+
+
+
+
+		CombatMode:
+
+
+	Listed in addon, but not in FrameXML UIPanelWindows/UISpecialFrames/UIMenus:
+
+BattlefieldFrame         VoiceMacroMenu           CoinPickupFrame          CraftFrame               OptionsFrame
+PaperDollFrame           PetPaperDollFrame        PetRenamePopup           PetStable                RaidFrame
+ReputationFrame          ScriptErrors             SkillFrame               SoundOptionsFrame        StackSplitFrame
+StatsFrame               SuggestFrame             TalentFrame              TalentTrainerFrame       TutorialFrame
+UIOptionsFrame           UnitPopup                CosmosMasterFrame        CosmosDropDown           ChooseItemsFrame
+ImprovedErrorFrame       TicTacToeFrame           OthelloFrame             MinesweeperFrame         GamesListFrame
+ConnectFrame             ChessFrame               QuestShareFrame          TotemStomperFrame        StaticPopup1
+StaticPopup2             StaticPopup3             StaticPopup4             DropDownList3            WantAds
+CosmosDropDownBis        InventoryManagerFrame    InspectPaperDollFrame    ContainerFrame1          ContainerFrame2
+ContainerFrame3          ContainerFrame4          ContainerFrame5          ContainerFrame6          ContainerFrame7
+ContainerFrame8          ContainerFrame9          ContainerFrame10         ContainerFrame11         ContainerFrame12
+ContainerFrame13         ContainerFrame14         ContainerFrame15         ContainerFrame16         ContainerFrame17
+AutoPotion_Template_Dialog  NxSocial              ARKINV_Frame1            WardrobeFrame            ACP_AddonList
+AccountantFrame          ImmersionFrame           BagnonFrameinventory     GwCharacterWindow        GwCharacterWindowsMoverFrame
+FlightMapFrame
+
+
+	Listed in FrameXML, but not the addon:
+
+ItemRefTooltip           ColorPickerFrame         ScrollOfResurrectionFrame  ScrollOfResurrectionSelectionFrame  CalendarContextMenu
+AudioOptionsFrame        PVPBannerFrame           PetStableFrame           PVPBannerFrame           QuestLogDetailFrame
+DressUpFrame             PetitionFrame            ItemTextFrame            RaidParentFrame          RaidBrowserFrame
+CinematicFrame           ChatConfigFrame          WorldStateScoreFrame     QuestChoiceFrame         ArchaeologyFrame
+BlackMarketFrame         CalendarFrame            GMSurveyFrame            GuildBankFrame           TransmogrifyFrame
+ItemSocketingFrame       ItemUpgradeFrame         ReforgingFrame           TokenFrame               VoidStorageFrame
+
+
+
+
+		ConsolePort:
+
+
+	Listed in addon, but not in FrameXML UIPanelWindows/UISpecialFrames/UIMenus:
+
+AddonList                BagHelpBox               BasicScriptErrors        CinematicFrameCloseDialog  ContainerFrame1
+ContainerFrame2          ContainerFrame3          ContainerFrame4          ContainerFrame5          ContainerFrame6
+ContainerFrame7          ContainerFrame8          ContainerFrame9          ContainerFrame10         ContainerFrame11
+ContainerFrame12         ContainerFrame13         GuildInviteFrame         LFDRoleCheckPopup        LFGDungeonReadyDialog
+LFGInvitePopup           OpenMailFrame            PetBattleFrame           PVPReadyDialog           QuestLogPopupDetailFrame
+RecruitAFriendFrame      ReadyCheckFrame          SplashFrame              StackSplitFrame          StaticPopup1
+StaticPopup2             StaticPopup3             StaticPopup4             TimeManagerFrame         TutorialFrame
+GroupLootFrame1          GroupLootFrame2          GroupLootFrame3          GroupLootFrame4
+
+
+	Listed in FrameXML, but not the addon:
+
+ColorPickerFrame         ScrollOfResurrectionFrame  ScrollOfResurrectionSelectionFrame  EmoteMenu   LanguageMenu
+CalendarContextMenu      AudioOptionsFrame        HelpFrame                PVPUIFrame               PVPBannerFrame
+PetStableFrame           EncounterJournal         PetJournalParent         TabardFrame              PVPBannerFrame
+QuestLogFrame            QuestLogDetailFrame      GuildRegistrarFrame      RaidParentFrame          RaidBrowserFrame
+CinematicFrame           WorldStateScoreFrame     QuestChoiceFrame         AchievementFrame         ArchaeologyFrame
+AuctionFrame             KeyBindingFrame          BlackMarketFrame         CalendarFrame            GMSurveyFrame
+GuildBankFrame           GuildFrame               InspectFrame             TransmogrifyFrame        ItemSocketingFrame
+ItemUpgradeFrame         LookingForGuildFrame     MacroFrame               ReforgingFrame           PlayerTalentFrame
+TokenFrame               TradeSkillFrame          ClassTrainerFrame        VoidStorageFrame
+
+
+
+
+		MouseLookLock:
+
+
+	Listed in addon, but not in FrameXML UIPanelWindows/UISpecialFrames/UIMenus:
+
+BattlefieldFrame         VoiceMacroMenu           CoinPickupFrame          CraftFrame               LoXXXotFrame
+OptionsFrame             PaperDollFrame           PetPaperDollFrame        PetRenamePopup           PetStable
+RaidFrame                ReputationFrame          ScriptErrors             SkillFrame               SoundOptionsFrame
+StackSplitFrame          StatsFrame               SuggestFrame             TalentFrame              TalentTrainerFrame
+TutorialFrame            UIOptionsFrame           UnitPopup                CosmosMasterFrame        CosmosDropDown
+ChooseItemsFrame         ImprovedErrorFrame       TicTacToeFrame           OthelloFrame             MinesweeperFrame
+GamesListFrame           ConnectFrame             ChessFrame               QuestShareFrame          TotemStomperFrame
+StaticPopXXXup1          StaticPopup2             StaticPopup3             StaticPopup4             DropDownList3
+WantAds                  CosmosDropDownBis        InventoryManagerFrame    InspectPaperDollFrame    ContainerFrame1
+ContainerFrame2          ContainerFrame3          ContainerFrame4          ContainerFrame5          ContainerFrame6
+ContainerFrame7          ContainerFrame8          ContainerFrame9          ContainerFrame10         ContainerFrame11
+ContainerFrame12         ContainerFrame13         ContainerFrame14         ContainerFrame15         ContainerFrame16
+ContainerFrame17         AutoPotion_Template_Dialog  NxSocial              ARKINV_Frame1            ACP_AddonList
+AccountantFrame          AdiBagsContainer1        ElvUI_ContainerFrame     GarrisonLandingPage      GarrisonMissionFrame
+GarrisonBuildingFrame
+
+
+	Listed in FrameXML, but not the addon:
+
+ItemRefTooltip           ColorPickerFrame         ScrollOfResurrectionFrame  ScrollOfResurrectionSelectionFrame  CalendarContextMenu
+AudioOptionsFrame        PVPBannerFrame           PetStableFrame           LootFrame                PVPBannerFrame
+QuestLogDetailFrame      DressUpFrame             PetitionFrame            ItemTextFrame            RaidParentFrame
+RaidBrowserFrame         CinematicFrame           ChatConfigFrame          WorldStateScoreFrame     QuestChoiceFrame
+ArchaeologyFrame         BlackMarketFrame         CalendarFrame            GMSurveyFrame            GuildBankFrame
+TransmogrifyFrame        ItemSocketingFrame       ItemUpgradeFrame         ReforgingFrame           TokenFrame
+VoidStorageFrame

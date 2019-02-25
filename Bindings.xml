@@ -1,0 +1,61 @@
+<Bindings>
+
+	<Binding name="INTERACTNEAREST" header="ImmersiveAction_" >
+		-- description="Target and interact with closest friendly npc"
+		-- Rebound dynamically to either INTERACTTARGET or TARGETNEARESTFRIEND.
+		print("INTERACTNEAREST is disabled:  range checking is not working.")
+	</Binding>
+
+	<Binding name="ToggleActionMode" >
+		-- description="Toggle Action mode"
+		ImmersiveAction:ToggleActionMode()
+	</Binding>
+
+	<Binding name="TurnOrActionHijack" runOnUp="true" hidden="true" >
+		-- Turn without Interacting. Used when we don't want to the RightButton to Interact upon release.
+		ImmersiveAction:TurnOrActionHijack(keystate == 'down')
+	</Binding>
+
+	<!-- <ModifiedClick action="ActionModeEnable" default="SHIFT" /> -->
+	<!-- <ModifiedClick action="ActionModeDisable" default="ALT" />  -->
+	<ModifiedClick action="Interact" default="CTRL" /> 
+
+
+	<Binding name="CLICK ClearTargetButton:LeftButton" header="UIShortcuts" >
+		-- Name must be the same as in ImmersiveAction.lua
+		-- description="Unselect Target"
+		-- CLICKs the ClearTargetButton without any code here.
+	</Binding>
+	
+	<Binding name="CLICK FocusMouseoverButton:LeftButton" >
+		-- description="Focus Mouseover"
+		-- CLICKs the FocusMouseoverButton without any code here.
+	</Binding>
+	
+	<Binding name="LookBackWhilePushed" runOnUp="true" >
+		-- description="See who's following: Look back while pushed, look forward when released."
+		FlipCameraYaw(180)
+	</Binding>
+	
+	<Binding name="EjectPassenger" >
+		-- description="Eject a passenger. One at a time."
+		UIShortcuts.EjectPassenger()
+	</Binding>
+	
+	<Binding name="ToggleGameMenuOnly" >
+		-- description="Open GameMenu without clearing target or closing every frame on screen."
+		UIShortcuts.ToggleGameMenuOnly()
+	</Binding>
+	
+	<Binding name="ToggleMacroFrame" >
+		-- /macro
+		-- description="Open macro editor."
+		UIShortcuts.ToggleMacroFrame()
+	</Binding>
+	
+	<Binding name="ToggleLootHistoryFrame" >
+		-- description="Show/hide loot history frame."
+		ToggleLootHistoryFrame()
+	</Binding>
+	
+</Bindings>

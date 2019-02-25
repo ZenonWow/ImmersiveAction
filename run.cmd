@@ -1,0 +1,1 @@
+D:/WowStore/addons/dev/scripts/run.cmd
