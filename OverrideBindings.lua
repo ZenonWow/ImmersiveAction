@@ -365,40 +365,76 @@ WorldClickHandler.original = { [WorldFrame] = {}, [UIParent] = {} }
 WorldClickHandler.hooked = { [WorldFrame] = {}, [UIParent] = {} }
 
 
-function WorldClickHandler.FixAccidentalRightClick(frame, button, ...)
-	print("    IA.FixB2:", frame, button, ...)
+function WorldClickHandler.OnMouseDown(frame, button)
 	local self = WorldClickHandler
-	local DoubleClickInterval = IA.db.profile.DoubleClickInterval or 0.3
-	if IA.FixB2 == false then  return  end
+	-- If the OnMouseUp hook runs before TurnOrActionStop(),
+	-- then similarly OnMouseDown runs before TurnOrActionStart(), right?  (before hiding the mouseover)
+	self.wasMouseover = UnitExists('mouseover')
+	-- self.wasMouseover = self.isMouseover
+	-- self.wasMouseover =  GetTime() - self.LastMouseoverTime < 0.3  -- Lost mouseover just before?
+	print("    WorldFrame:OnMouseDown", frame, button, "IsMouselooking=", IsMouselooking(), "isMouseover=", self.isMouseover, "wasMouseover=", wasMouseover, "<-- Hope this is trueish.")
+end
+
+
+function WorldClickHandler.OnMouseUp(frame, button)
+	print("    WorldFrame:OnMouseUp", frame, button)
+	local self = WorldClickHandler
 	-- local key = MapButtonToKey[button]
 	-- if  key == self.BUTTONs.Turn  and  UnitExists('mouseover')  and  not IsModifiedClick('Interact')  then
-	if  button == 'RightButton'  and  not IsModifiedClick('Interact')  then
-		local was = IsMouselooking()
+	if button == 'RightButton' then
+		WorldClickHandler.FixRightClick(frame, button)
+	end
+end
 
-		local now, last = GetTime(), self.LastTurnClick
-		self.LastTurnClick = now
-		if DoubleClickInterval < now-last then
-			print("IA.FixB2: MouselookStop()")
-			if was then  IA.MouselookStop()  end
-			-- IA.MouselookStop()    -- Hack TurnOrActionStop() into believing it was not pressed.
-		elseif was then
-			-- IA.MouselookStart()    -- Allow Interact.
-			print("IA.FixB2: Interact")
-		end
-		local mouseover = UnitExists('mouseover')
-		print("  IA.FixB2: mouseover=", mouseover, "wasMlook=", was)
+
+function WorldClickHandler.FixRightClick(frame, button)
+	if IA.commandState.ActionMode then
+		-- In ActionMode pressing TurnOrAction (RightButton) will show the cursor, and when released
+		-- it will Interact with anything under the cursor. This needs some trickery, perhaps:
+		-- Enable Mouselook early, _before_ the button release is processed, so it counts as a RightButton released after Mouselooking,
+		-- that translates to an Interact action. Will work until bliz changes its handling of bindings.
+		-- Thought:  rightclick interacts if and only if its pressed for a short time, some ClickInterval.
+		-- What starts the timer? MouselookStart? Then this will work with 0 pressed time.
+		-- Or TurnOrActionStart? That happened long ago, the user was targeting with the cursor, certainly longer than say 0.3 sec.
+		-- In that case targeting + doubleclick will do the 2nd click within the time limit. Quirky.
+		IA.MouselookStart()
+	else
+		-- CursorMode
+		WorldClickHandler:FixAccidentalRightClick(frame, button)
+	end
+end
+
+
+function WorldClickHandler:FixAccidentalRightClick(frame, button)
+	if IA.FixB2 == false then  return  end
+	if not self.wasMouseover then  return  end
+	if not IsMouselooking() then  return  end
+	if IsModifiedClick('Interact') then  return  end
+
+	local DoubleClickInterval = IA.db.profile.DoubleClickInterval or 0.3
+	local now, last = GetTime(), self.LastTurnClick
+	self.LastTurnClick = now
+
+	-- local mouseover = UnitExists('mouseover')  --  Always nil: mouseover is hidden when IsMouselooking()
+
+	if DoubleClickInterval < now-last then
+		print("IA.FixB2: MouselookStop()")
+		IA.MouselookStop()    -- Trick TurnOrActionStop() into believing it was not pressed.
+	else
+		-- IA.MouselookStart()    -- Allow Interact.
+		print("IA.FixB2: Interact")
 	end
 end
 
 
 function WorldClickHandler:UPDATE_MOUSEOVER_UNIT(event, ...)
 	local mouseover = UnitExists('mouseover')
-	if  mouseover  or  self.wasMouseover  then
+	if  mouseover  or  self.isMouseover  then
 		-- Hovering over mouseover unit,  or just lost the mouseover before this event.
 		self.LastMouseoverTime = GetTime()
 	end
 	
-	self.wasMouseover = mouseover
+	self.isMouseover = mouseover
 end
 
 
@@ -535,21 +571,31 @@ function WorldClickHandler:InitSecureHandler()
 	-- WorldFrame has no OnClick script... splendid.
   -- OnMouseDown/OnMouseUp cannot be wrapped, therefore altered by a third-party.
 	-- Only insecure, post-handler is possible with HookScript('OnMouseDown'). This cannot alter bindings in combat.
-	if self.hooked[WorldFrame].OnMouseUp
-	WorldFrame:HookScript('OnMouseUp', self.FixAccidentalRightClick)
+	if not self.hooked[WorldFrame].OnMouseUp then
+		self.original[WorldFrame].OnMouseDown = WorldFrame:GetScript('OnMouseDown')
+		self.original[WorldFrame].OnMouseUp   = WorldFrame:GetScript('OnMouseUp')
+		WorldFrame:HookScript('OnMouseDown', self.OnMouseDown)
+		WorldFrame:HookScript('OnMouseUp', self.OnMouseUp)
+		self.hooked[WorldFrame].OnMouseDown = WorldFrame:GetScript('OnMouseDown')
+		self.hooked[WorldFrame].OnMouseUp   = WorldFrame:GetScript('OnMouseUp')
+	end
 
 	SecureHandlerWrapScript(UIParent, 'OnClick', handler, UIParent_OnClick_PreSnippet, UIParent_OnClick_PostSnippet)
 	
 	handler:UpdateDoubleClickInterval()
 	handler:UpdateOverrideBindings()
-	
-
 end
 
 
 function WorldClickHandler:DisableHandler()
-	self:UnwrapScript(WorldFrame, 'OnMouseDown')
-	self:UnwrapScript(WorldFrame, 'OnMouseUp')
+	-- self:UnwrapScript(WorldFrame, 'OnMouseDown')
+	-- self:UnwrapScript(WorldFrame, 'OnMouseUp')
+	self:UnwrapScript(UIParent, 'OnClick')
+
+	if self.hooked[WorldFrame].OnMouseDown == WorldFrame:GetScript('OnMouseDown')
+	then  WorldFrame:SetScript('OnMouseDown', self.original[WorldFrame].OnMouseDown)  end
+	if self.hooked[WorldFrame].OnMouseUp == WorldFrame:GetScript('OnMouseUp')
+	then  WorldFrame:SetScript('OnMouseUp', self.original[WorldFrame].OnMouseUp)  end
 end
 
 
@@ -588,6 +634,7 @@ function WorldClickHandler:Enable(enable)
 		self:RegisterEvent('UPDATE_MOUSEOVER_UNIT')
 		self:InitSecureHandler()
 	else
+		self:UnregisterEvent('UPDATE_MOUSEOVER_UNIT')
 		self:DisableHandler()
   end
 	return true
