@@ -31,27 +31,6 @@ InteractNearest.Overrides.INTERACTNEAREST = true
 
 
 
---[[
-Test macro conditionals:
-[harm][dead] INTERACTTARGET ; [noharm][nodead] INTERACTTARGET ; TARGETNEARESTFRIEND
-In combat:
--- target,interact,target,interact,..  --  Cannot trigger on keypress in secure context to switch the binding.
--- Auto-bind with this StateHandler macro:
-[harm][dead] INTERACTTARGET ; [noharm][nodead] INTERACTTARGET ; [combat] TARGETLASTHOSTILE ; TARGETNEAREST
--- Out-of-combat:  check distance, override with TARGETNEAREST if far. OnUpdate and on target change.
--- StateHandler will override on next target change, then the distance logic triggers and overrides, if out-of-combat.
-
-/dump SLASH_TARGET_LAST_ENEMY
-/dump SLASH_TARGET_NEAREST_ENEMY
-/dump SLASH_TARGET_NEAREST_FRIEND
-/targetlastenemy
-
-/console targetNearestDistance 10,000000
-/targetenemy [noharm][dead]
-/console targetNearestDistance 41.000000
---]]
-
-
 
 --[[ Dec 7, 2017 by justice7ca
 "Smart Targeting" to replace the default left click, or to be remapped with a keybind.
@@ -85,7 +64,11 @@ The purpose of this is to allow left click to be used for multiple purposes whil
 -- if PlayerInCombat() then  return  end    -- Done with 'ignore' now.
 local InCombatSnippet = [===[
 	if newstate=='ignore' then  return  end
-	if newstate == self:GetAttribute('InteractBinding') then  print("InCombatSnippet(): newstate == InteractBinding == "..newstate)  end
+	local InteractBinding = self:GetAttribute('InteractBinding')
+	if newstate == InteractBinding
+	then  print("InCombatSnippet():  newstate == InteractBinding ==", newstate)
+	else  print("InCombatSnippet():  InteractBinding was=", InteractBinding, "newstate=", newstate)
+  end
 	self:SetAttribute('InteractBinding', newstate)
 ]===]
 
@@ -93,9 +76,12 @@ local InCombatSnippet = [===[
 -- Set all keys to the new InteractBinding.
 --
 local OverrideBindingsSnippet = [===[
-	if value=='' then  value = nil  end
-	if lastInteractBinding == value then  print("OverrideBindingsSnippet(): value == lastInteractBinding == "..value)  end
+	if lastInteractBinding == value
+	then  print("OverrideBindingsSnippet(): value == lastInteractBinding ==", value)
+	else  print("OverrideBindingsSnippet(): lastInteractBinding=", lastInteractBinding, "new=", value)
+  end
 	lastInteractBinding = value
+	if value=='' then  value = nil  end
 
 	local TargetCommand = TargetCommand
 	-- local TargetCommand = self:GetAttribute('TargetCommand')
@@ -109,12 +95,49 @@ local OverrideBindingsSnippet = [===[
 
 
 
+--[[
+Test macro conditionals:
+[harm][dead] INTERACTTARGET ; [noharm][nodead] INTERACTTARGET ; TARGETNEARESTFRIEND
+In combat:
+-- target,interact,target,interact,..  --  Cannot trigger on keypress in secure context to switch the binding.
+-- Auto-bind with this StateHandler macro:
+[harm][dead] INTERACTTARGET ; [noharm][nodead] INTERACTTARGET ; [combat] TARGETLASTHOSTILE ; TARGETNEAREST
+-- Out-of-combat:  check distance, override with TARGETNEAREST if far. OnUpdate and on target change.
+-- StateHandler will override on next target change, then the distance logic triggers and overrides, if out-of-combat.
+
+/dump SLASH_TARGET_LAST_ENEMY
+/dump SLASH_TARGET_NEAREST_ENEMY
+/dump SLASH_TARGET_NEAREST_FRIEND
+/targetlastenemy
+
+/console targetNearestDistance 10,000000
+/targetenemy [noharm][dead]
+/console targetNearestDistance 41.000000
+--]]
+
+
 function InCombatHandler:InitSecureHandler()
 	local handler = self    -- For clarity.
 
+	 -- The StateDriver decides in combat what binding command to use.
+	 -- Checking distance is prohibited intentionally in secure context.
+	--[[
+	-- [harm,dead]: dead enemy, possibly lootable ; [noharm,nodead]: friendly, possibly npc
 	local NoCombatCondition = "[nocombat] ignore ; "
-	local MouseOverCondition = "[@mouseover,harm,dead] INTERACTMOUSEOVER ; [@mouseover,noharm,nodead] INTERACTMOUSEOVER ; "
-	local TargetCondition = "[harm,dead] INTERACTTARGET ; [noharm,nodead] INTERACTTARGET"
+	local MouseOverCondition = "[@mouseover,harm,dead] [@mouseover,noharm,nodead] INTERACTMOUSEOVER ; "
+	local TargetCondition = "[harm,dead] [noharm,nodead] INTERACTTARGET"
+	--]]
+	-- In combat it should focus only on looting. Are there any fights that require chatting with friendly npcs?
+	-- Anyways in CursorMode the user can rightclick the friendly npc, while
+	-- in ActionMode pressing the RightButton will show the cursor (invert Mouselook)
+	-- which will interact when released, using the SuppressRightClick hack in reverse... splendid.
+	local NoCombatCondition = "[nocombat] ignore ; "
+	local MouseOverCondition = "[@mouseover,harm,dead] INTERACTMOUSEOVER ; "
+	local TargetCondition = "[harm,dead] INTERACTTARGET"
+	-- Note: INTERACTMOUSEOVER falls back to INTERACTTARGET if it can't interact, and
+	-- will interact with any targeted unit, attacking if its enemy.
+	-- In the heat of the battle this will seldom be noticed.
+
 	-- _G.SecureStateDriverManager:RegisterEvent("UPDATE_MOUSEOVER_UNIT")  -- necessary?
 	_G.RegisterStateDriver(handler, 'InteractBinding', NoCombatCondition .. MouseOverCondition .. TargetCondition)
 
@@ -237,8 +260,7 @@ function InteractNearest:PLAYER_REGEN_ENABLED(event)
 	-- Try to do  /targetlastenemy  after leaving combat.
 	if event == 'PLAYER_REGEN_ENABLED' then  self.TargetLastHostile = 'TARGETLASTHOSTILE'  end
 
-	local handler = self.InCombatHandler
-	-- Update TargetCommand in protected environment in case :SetTargetCommand() was in combat.
+	-- Update TargetCommand in protected environment in case :SetTargetCommand() was called in combat.
 	self:SetTargetCommand(self.TargetCommand)
 
 	-- StartTacking() -> OverrideBindings() will use the uploaded TargetCommand.
