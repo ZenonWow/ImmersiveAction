@@ -3,6 +3,9 @@
 ------------------------------------------
 BINDING_HEADER_UIShortcuts        = "UI Shortcuts - usability keybindings"
 
+local UIShortcuts = _G.UIShortcuts or {}
+_G.UIShortcuts = UIShortcuts
+
 -- Focus Mouseover
 UIShortcuts.FocusMouseoverButton  = LibShared.Require.CreateMacroButton('FocusMouseoverButton', '/focus mouseover')
 UIShortcuts.FocusMouseoverBinding = 'CLICK FocusMouseoverButton:LeftButton'    -- Name must be the same as in Bindings.xml.
@@ -16,7 +19,7 @@ _G['BINDING_NAME_'..UIShortcuts.ClearTargetBinding] = "Clear Target"
 -- Bindings locales
 
 -- See who's following: Look back while pushed, look forward when released.
-BINDING_NAME_LookBackWhilePushed  = "Look back _while_ pushed"
+BINDING_NAME_LookBackWhilePushed  = "Look back *while* pushed"
 -- Eject a passenger. One at a time.
 BINDING_NAME_EjectPassenger       = "Eject a passenger"
 -- Open GameMenu without clearing target or closing every frame on screen.
@@ -41,14 +44,14 @@ BINDING_NAME_TOGGLETALENTSTAB         = "Toggle Talents Tab"
 ------------------------------------------
 
 -- Open the game menu without deselecting the target or closing frames like the map.
-local  silent= true
+local  loud = nil
 function  ToggleGameMenuOnly()
 	if  GameMenuFrame:IsShown()  then
-		if not silent then  PlaySound("igMainMenuQuit")  end
+		if loud then  PlaySound("igMainMenuQuit")  end
 		print("HideUIPanel(GameMenuFrame)")
 		HideUIPanel(GameMenuFrame)
 	else
-		if not silent then  PlaySound("igMainMenuOpen")  end
+		if loud then  PlaySound("igMainMenuOpen")  end
 		print("ShowUIPanel(GameMenuFrame)")
 		ShowUIPanel(GameMenuFrame)
 	end
@@ -69,7 +72,7 @@ end
 -- Shift-Ctrl-X, Shift-Ctrl-Del:  Eject a passenger.
 -- /run if IsControlKeyDown() then if CursorHasItem() then DeleteCursorItem() else EjectPassengerFromSeat(1);EjectPassengerFromSeat(2) end end
 --]]
-function  ZenShortcuts.EjectPassenger()
+function  UIShortcuts.EjectPassenger()
 	local seatIdx
 	for  i = 1, UnitVehicleSeatCount('player')  do
 		if  CanEjectPassengerFromSeat(i)  then
@@ -80,7 +83,7 @@ function  ZenShortcuts.EjectPassenger()
 		end
 	end
 
-	if not seatIdx then  print('No passengers to eject.')
+	if not seatIdx then  print('No passengers to eject.')  end
 end
 
 

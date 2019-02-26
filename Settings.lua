@@ -1,6 +1,5 @@
 local _G, ADDON_NAME, _ADDON = _G, ...
 local IA = _G.ImmersiveAction or {}  ;  _G.ImmersiveAction = IA
--- local Log = IA.Log
 -- local Log = IA.Log or {}  ;  IA.Log = Log
 
 local indexOf = _G.LibShared.Require.indexOf
@@ -76,6 +75,14 @@ IA.defaultSettings= {
 local Config = {}
 IA.Config = Config
 Config.modifierKeys = { '', 'SHIFT', 'CTRL', 'ALT' }
+
+function Config:InitOptionsFrame()
+	if self.config.optionsFrame then  return  end
+	--self.config:InitCommandLabels()
+	--self.config:InitOptionsTable()
+	LibStub("AceConfig-3.0"):RegisterOptionsTable(self.config.name, self.config.optionsTable)
+	self.config.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(self.config.name, self.config.name)
+end
 
 --[[ Commands vocabulary:
 turning (character with mouse) = ImmersiveAction (term from GuildWars2 community) = Mouselook (term from Blizzard - Wow lua api)
@@ -188,7 +195,7 @@ local function opt(key, name, desc, defValues)
 		set = function(info, idx)
 			local value= Config.commands[idx]
 			if value=='' then  value = nil  end
-			IA:SetUserBinding('General', key, value)
+			IA.UserBindings:SetUserBinding('General', key, value)
 		end,
 	}
 	Config.optionsTable.args[key]= optInfo

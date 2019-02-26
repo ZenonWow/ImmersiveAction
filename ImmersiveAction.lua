@@ -37,11 +37,35 @@ https://wow.curseforge.com/projects/mouselook
 https://wow.curseforge.com/projects/mouselook-binding
 https://wow.curseforge.com/projects/mouse-combat
 
-
 Targeting without mouse press:  cast spell when releasing bound key.
 https://wow.curseforge.com/projects/aoeonrelease
 https://www.mmo-champion.com/threads/2110112-GW2-Style-Ground-Targeted-Casting
+
+Basic comparison:
+--
+MouselookHandler monitors/hooks the two mouse buttons:  TurnOrAction, CameraOrSelectOrMove
+	Credits for learning about these commands and hooking them goes to its authors  meribold (Lukas Waymann) and pwoodworth (Patrick Woodworth).
+  Shows the cursor if SpellIsTargeting(),  or if any of 2 frames pop up:  MovieFrame.CloseDialog, CinematicFrameCloseDialog
+  Has a config dialog for MouselookOverrideBindings, and a Lua editbox where you can write your own addon.
+Mouse-Look-Lock has an extensive list of monitored frames, tediously collected by hand.
+	Shows the cursor if CursorHasItem() or a window pops up.
+	Credits for the framelist goes to its author  Trimble Epic.
+  Scans each frame every 0.2 seconds (MouseLook_UpdateFrequency), looking them up in _G.  UnmouseableFrameOnScreen() comes from there.
+	It also prevents switching to Mouselook - i think - when mouse is over some frames like ChatFrame buttons, BuffFrame, UnitFrame, PetActionBarFrame.
+CombatMode introduced interacting and targeting nearby npcs with the same button, without moving the mouse, like in any modern mmo designed for user experience (UX).
+	Credits for the implementation idea for InteractNearest goes to its author  Justice7ca.
+	Shows the cursor if CursorHasItem() or SpellIsTargeting().
+	Also monitors frames using UnmouseableFrameOnScreen() on every OnUpdate().
+
+kiki-utils
+ConsolePort
+
+Credits also go to:
+--
+SuppressRightClick and its contributors  Maunotavast, tynstar9, Urzulan.  See credits/SuppressRightClick.txt for details and forum logs.
+AoEonRelease for the most precisely crafted and researched code i've seen in addons. It does brainsurgery on the crooked SecureHandlers. Kudos for the perfectionism.
 --]]
+
 
 --[[
 /targetenemy [noharm][dead]
@@ -52,15 +76,15 @@ https://www.mmo-champion.com/threads/2110112-GW2-Style-Ground-Targeted-Casting
 /dump GetBindingKey('CAMERAORSELECTORMOVE'), GetBindingKey('TURNORACTION'), GetBindingKey('TARGETNEARESTFRIEND')
 Reset to default:
 /run ImmersiveAction.ResetMouseButton12Bindings()
-/run SetBinding('BUTTON1','CAMERAORSELECTORMOVE');SetBinding('BUTTON2','TURNORACTION')
+/run SetBinding('BUTTON1','CAMERAORSELECTORMOVE') SetBinding('BUTTON2','TURNORACTION')
 Additional:
-/run SetBinding('BUTTON4','MOVEANDSTEER');SetBinding('BUTTON5','COMBATMODE_ENABLE')
+/run SetBinding('BUTTON4','MOVEANDSTEER') SetBinding('BUTTON5','COMBATMODE_ENABLE')
 /run SetBinding('ALT-BUTTON4','TOGGLEAUTORUN')
 My favourite:
-/run SetBinding('BUTTON1','MOVEANDSTEER');SetBinding('ALT-BUTTON1','CAMERAORSELECTORMOVE');SetBinding('BUTTON2','TURNORACTION');SetBinding('BUTTON4','TOGGLEAUTORUN')
+/run SetBinding('BUTTON1','MOVEANDSTEER') SetBinding('ALT-BUTTON1','CAMERAORSELECTORMOVE') SetBinding('BUTTON2','TURNORACTION') SetBinding('BUTTON4','TOGGLEAUTORUN')
 
 Debug:
-/dump ImmersiveAction.config.optionsFrame
+/dump ImmersiveAction.Config.optionsFrame
 --]]
 
 
@@ -88,7 +112,7 @@ local Log = IA.Log or {}  ;  IA.Log = Log
 function IA:OnInitialize()
 	-- Run on this addon's ADDON_LOADED event.
 	Log.Init('  ImmersiveAction:OnInitialize()')
-	self.commands:HookCommands()
+	self:HookCommands()
 	-- self:HookUpFrames()		-- is it necessary before OnEnable() calling it again?
 	self:RegisterChatCommand("ia", "ChatCommand")
 	self:RegisterChatCommand("immersiveaction", "ChatCommand")
@@ -102,17 +126,12 @@ function IA:OnInitialize()
 	local defaultProfile= ImmersiveActionDB  and  ImmersiveActionDB.profileKeys  and  ImmersiveActionDB.profileKeys.Default
 	if  defaultProfile == nil  then  defaultProfile= true  end		-- false to have character-specific profiles
 
-	self.db = LibStub("AceDB-3.0"):New("ImmersiveActionDB", self.config.defaultSettings, defaultProfile)
+	self.db = LibStub("AceDB-3.0"):New("ImmersiveActionDB", self.defaultSettings, defaultProfile)
 	self.db.RegisterCallback(self, "OnProfileChanged", "ProfileChanged")
 	self.db.RegisterCallback(self, "OnProfileCopied", "ProfileChanged")
 	self.db.RegisterCallback(self, "OnProfileReset", "ProfileChanged")
 	--self.db.RegisterCallback(self, "OnDatabaseShutdown", "OnDisable")
 	
-	--self.config:InitCommandLabels()
-	--self.config:InitOptionsTable()
-	LibStub("AceConfig-3.0"):RegisterOptionsTable(self.config.name, self.config.optionsTable)
-	self.config.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(self.config.name, self.config.name)
-
 	self.commandState.ActionMode = self.db.profile.enabledOnLogin
 	self:ProfileChanged()
 end	
@@ -135,15 +154,12 @@ function IA:OnEnable()
 	-- Find missing frames when delayed loading any addon.
 	self:RegisterEvent('ADDON_LOADED')
 
-	-- Monitor Shift/Ctrl/Alt.
-	self:RegisterEvent('MODIFIER_STATE_CHANGED')
-
+	-- Monitor Shift/Ctrl/Alt in CommandHooks.lua.
+	self:RegisterCommandEvents(true)
 	-- Targeting and questing shows cursor.
-	self:RegisterEvent('CURSOR_UPDATE')
-	self:RegisterEvent('QUEST_PROGRESS')
-	self:RegisterEvent('QUEST_FINISHED')
-	-- self:RegisterEvent('PET_BAR_UPDATE')
-	-- self:RegisterEvent('ACTIONBAR_UPDATE_STATE')
+	self:RegisterWindowEvents(true)
+	
+	IA.Config:InitOptionsFrame()
 end
 
 
@@ -156,12 +172,10 @@ function IA:OnDisable()
 
 	self:UnregisterEvent('ADDON_LOADED')
 
-	self:UnregisterEvent('MODIFIER_STATE_CHANGED')
-	self:UnregisterEvent('CURSOR_UPDATE')
-	self:UnregisterEvent('QUEST_PROGRESS')
-	self:UnregisterEvent('QUEST_FINISHED')
-	-- self:UnregisterEvent('PET_BAR_UPDATE')
-	-- self:UnregisterEvent('ACTIONBAR_UPDATE_STATE')
+	-- Monitor Shift/Ctrl/Alt in CommandHooks.lua.
+	self:RegisterCommandEvents(false)
+	-- Targeting and questing shows cursor.
+	self:RegisterWindowEvents(false)
 
 	-- Disable UpdateOverrideBindings().
 	self:UnregisterBucketEvent('UPDATE_BINDINGS')
@@ -176,14 +190,14 @@ function IA:ADDON_LOADED(event, addonName)
 	-- static loaded addons already received it
 	-- only delay-loaded addons will trigger
 	-- ex.: Blizzard_BindingUI -> KeyBindingFrame
-	Log.Init('  ImmersiveAction:ADDON_LOADED('.. self.colors.green .. addonName ..'|r)')
+	Log.Init('  ImmersiveAction:ADDON_LOADED('.. IA.colors.green .. addonName ..'|r)')
 	self:HookUpFrames()
 end
 
 
 function IA:ProfileChanged()
 	-- Update loaded user binding overrides.
-	self:UpdateUserBindings()
+	self.UserBindings:UpdateUserBindings()
 end
 
 
@@ -209,6 +223,15 @@ function IA.ResetMouseButton12Bindings()
 	SetBinding('CTRL-BUTTON2' ,nil)
 	SetBinding('SHIFT-BUTTON1',nil)
 	SetBinding('SHIFT-BUTTON2',nil)
+	SetBinding('ALT-CTRL-BUTTON1' ,nil)
+	SetBinding('ALT-CTRL-BUTTON2' ,nil)
+	SetBinding('ALT-SHIFT-BUTTON1',nil)
+	SetBinding('ALT-SHIFT-BUTTON2',nil)
+	SetBinding('CTRL-SHIFT-BUTTON1',nil)
+	SetBinding('CTRL-SHIFT-BUTTON2',nil)
+	SetBinding('ALT-CTRL-SHIFT-BUTTON1',nil)
+	SetBinding('ALT-CTRL-SHIFT-BUTTON2',nil)
+	-- Exhaustive.
 end
 
 

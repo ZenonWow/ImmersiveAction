@@ -6,7 +6,7 @@
 ## Author: Mongusius
 ## X-Category: Interface Enhancements
 
-## SavedVariables: ImmersiveActionSV
+## SavedVariables: ImmersiveActionSV, ImmersiveActionDB
 ## OptionalDeps: Ace3, LibShared
 
 ##- LoadManagers: AddonLoader

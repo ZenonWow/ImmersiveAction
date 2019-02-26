@@ -10,7 +10,7 @@ local Log = IA.Log or {}  ;  IA.Log = Log
 ----------------------
 
 -- Label visible in key bindings UI.
-BINDING_HEADER_ImmersiveAction = "Immersive Action"
+BINDING_HEADER_ImmersiveAction  = "Immersive Action"
 
 -- Custom commands
 BINDING_NAME_INTERACTNEAREST    = "Target and interact with closest friendly npc"
@@ -27,6 +27,7 @@ BINDING_NAME_TURNORACTION 				= "Turn or Interact (RightButton default)"
 ------------------------------------------
 
 -- Save original MouselookStart, then securehook the global to catch addon usage.
+IA.IsMouselooking = _G.IsMouselooking
 IA.MouselookStart = _G.MouselookStart
 IA.MouselookStop  = _G.MouselookStop
 
@@ -55,11 +56,13 @@ local CommandStopFunc = {
 	TargetPriorityHighlight	= _G.TargetPriorityHighlightStart and 'TargetPriorityHighlightEnd' or false,
 }
 
+--[[
 local StopsAutoRun = {
 	MoveAndSteerStart	= 1,
 	MoveForwardStart	= 1,
 	MoveBackwardStart	= 1,
 }
+--]]
 
 --[[
 TurnOrAction, MoveAndSteer, TargetPriorityHighlight  start Mouselook when pushed and stop it when released.
@@ -92,25 +95,25 @@ function UniqueHooks.StopAutoRun()  IA:SetCommandState('AutoRun', false)  end
 
 
 function IA:CommandHook(cmdName, pressed, event)
-	if  StopsAutoRun[event]  then  self:SetCommandState('AutoRun', false)  end
-	
-	local stateOk = self:SetCommandState(cmdName, pressed)
-	
-	if not stateOk then
-		local suffix= pressed  and  "key pressed again without being released. Stuck key?"  or  "key released without being pressed before."
-		Log.Anomaly("  CM - CommandHook(".. self.colors.red .. cmdName .."|r):  ".. suffix)
-	else
-		local keystate=  pressed  and  'down'  or  'up'
-		Log.Command("  CM - CommandHook(".. self.colors[keystate] .. cmdName .." ".. keystate:upper() .."|r)")
-	end
-	
+	self:ProcessCommand(cmdName, pressed)
 	-- if self.commandsHooked[cmdName]=='Mouselook' then  possibleTransition = pressed  else  possibleTransition = not pressed  end
-
 	-- Do MouselookStart/Stop as necessary
-  IA:UpdateMouselook(nil, event)
+  self:UpdateMouselook(nil, event)
 end
 
 
+function IA:PLAYER_STARTED_MOVING(event)
+	Log.Event(event)
+end
+
+function IA:PLAYER_STOPPED_MOVING(event)
+	Log.Event(event)
+	if self.commandState.AutoRun then
+		IA:SetCommandState('AutoRun', false)
+		Log.Anomaly("  IA:PLAYER_STOPPED_MOVING():  Disabled commandState."..colors.AutoRun.."AutoRun|r, state would have been inverted, and MoveAndSteer rebinding to TurnWithoutAction stuck.")
+		-- UpdateMouselook() does not depend on AutoRun, therefore not called.
+	end
+end
 
 
 -------------
@@ -124,7 +127,7 @@ end
 
 
 function IA:HookCommands()
-	Log.Init('CM - HookCommands()')
+	Log.Init('IA - HookCommands()')
 	
 	for  cmdName,group  in  pairs(self.commandsHooked)  do
 		local stopFunc = CommandStopFunc[cmdName]
@@ -173,11 +176,20 @@ function IA:ToggleActionMode(toState)
 end
 
 
+function IA:TurnWithoutInteract(pressed)
+	-- Like TurnOrAction (RightButton), without accidental interacting / pull / target change when released.
+	self:SetCommandState('TurnOrAction', pressed)
+	self:UpdateMouselook(nil, 'TurnWithoutInteract')
+end
+
+--[[
 function IA:TurnOrActionHijack(pressed)
 	-- TurnOrAction was pressed, then hijacked just before being released to avoid Interacting. Act as if TurnOrAction was released.
 	self:SetCommandState('TurnOrAction', pressed)
 	self:UpdateMouselook(nil, 'TurnOrActionHijack')
 end
+--]]
+
 
 
 
@@ -185,12 +197,31 @@ end
 -- Event handlers --
 --------------------
 
+function IA:RegisterCommandEvents(enable)
+	if enable ~= false then
+		self:RegisterEvent('MODIFIER_STATE_CHANGED')
+		self:RegisterEvent('CURSOR_UPDATE')
+		-- self:RegisterEvent('PET_BAR_UPDATE')
+		-- self:RegisterEvent('ACTIONBAR_UPDATE_STATE')
+		self:RegisterEvent('PLAYER_STARTED_MOVING')
+		self:RegisterEvent('PLAYER_STOPPED_MOVING')
+	else
+		self:UnregisterEvent('MODIFIER_STATE_CHANGED')
+		self:UnregisterEvent('CURSOR_UPDATE')
+		-- self:UnregisterEvent('PET_BAR_UPDATE')
+		-- self:UnregisterEvent('ACTIONBAR_UPDATE_STATE')
+		self:UnregisterEvent('PLAYER_STARTED_MOVING')
+		self:UnregisterEvent('PLAYER_STOPPED_MOVING')
+	end
+end
+
 
 local isModifierPressedFunc= {
 	SHIFT = IsShiftKeyPressed,
 	CTRL = IsCtrlKeyPressed,
 	ALT = IsAltKeyPressed,
 }
+
 
 function IA:MODIFIER_STATE_CHANGED(event)
 	local modifiers = self.db.profile.modifiers

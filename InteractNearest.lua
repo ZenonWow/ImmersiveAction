@@ -116,7 +116,7 @@ function InCombatHandler:InitSecureHandler()
 	local MouseOverCondition = "[@mouseover,harm,dead] INTERACTMOUSEOVER ; [@mouseover,noharm,nodead] INTERACTMOUSEOVER ; "
 	local TargetCondition = "[harm,dead] INTERACTTARGET ; [noharm,nodead] INTERACTTARGET"
 	-- _G.SecureStateDriverManager:RegisterEvent("UPDATE_MOUSEOVER_UNIT")  -- necessary?
-	_G.RegisterStateDriver(handler, 'InteractBinding', NoCombatCondition .. MouseOverCondition .. TargetCommand)
+	_G.RegisterStateDriver(handler, 'InteractBinding', NoCombatCondition .. MouseOverCondition .. TargetCondition)
 
 	handler:SetAttribute('_onstate-'..'InteractBinding', InCombatSnippet)
 	InCombatSnippet = nil
@@ -134,13 +134,24 @@ function InCombatHandler:InitSecureHandler()
 	-- handler:SetAttribute('_setTargetCommand', " TargetCommand = ... ")
 	-- handler:SetAttribute('_set',    " local name,value=... ; _G[name] = value ")
 	-- handler:SetAttribute('_addKey', " local key,toCmd=... ; DynamicKeys[key] = toCmd ")
+	self:SetTargetCommand(self.TargetCommand)
 
+	self.InitSecureHandler = nil
+end
+
+
+function InteractNearest:SetTargetCommand(TargetCommand)
+	self.TargetCommand = TargetCommand
+	if InCombatLockdown() then  return  end
 	-- handler.Env.TargetCommand = self.TargetCommand
 	-- handler:RunAttribute('_setTargetCommand', self.TargetCommand)
 	-- handler:RunSnippet('_setTargetCommand', self.TargetCommand)
-	handler:Execute(" TargetCommand = ... ", self.TargetCommand)
+	handler:Execute(" TargetCommand = '"..self.TargetCommand.."' ")
+end
 
-	self.InitSecureHandler = nil
+
+function InteractNearest:SetTargetEnemiesToo(enable)
+	self:SetTargetCommand( enable and 'TARGETNEAREST' or 'TARGETNEARESTFRIEND' )
 end
 
 
@@ -155,7 +166,10 @@ function InCombatHandler:UploadKeys(insecureKeys)
 		-- handler:RunSnippet('_addKey', key, toCmd)
 		-- RunSnippet() is not found on Earth, or in any code. Only "Iriel’s Field Guide to Secure Handlers" mentions it, but not how to set the snippets.
 		-- handler:Execute(" local key,toCmd=... ; DynamicKeys[key] = toCmd ", key, toCmd)
-		handler:Execute(" DynamicKeys['"..key.."'] = '"..toCmd.."' ")
+		if toCmd==true
+		then  handler:Execute(" DynamicKeys['"..key.."'] = true ")
+		else  handler:Execute(" DynamicKeys['"..key.."'] = '"..toCmd.."' ")
+		end
 		-- handler:Execute(" DynamicKeys."..key.." = '"..toCmd.."' ")
 	end
 end
@@ -177,6 +191,9 @@ function InteractNearest:OnUpdate(elapsed)
 	end
 end
 
+-- The insecure OnUpdate() runs only if the frame IsShown(), which
+-- happens when tracking a unit out-of-combat.
+-- In combat it's prohibited to change bindings anyway.
 InteractNearest:SetScript('OnUpdate', InteractNearest.OnUpdate)
 
 
@@ -186,14 +203,14 @@ InteractNearest:SetScript('OnUpdate', InteractNearest.OnUpdate)
 
 function InteractNearest:UPDATE_MOUSEOVER_UNIT(event, ...)
 	Log.Event(event)
-	-- Hovering a new mouseover will override the previous trackedUnit if it's 'target'.
-	self:TrackUnit('mouseover')
+	-- Hovering a new mouseover will override the previous trackedUnit if it was 'target'.
+	self:StartTackingUnit('mouseover')
 end
 
 function InteractNearest:PLAYER_TARGET_CHANGED(event, ...)
 	Log.Event(event)
 	-- Selecting a new target after finding a potential mouseover will override the trackedUnit.
-	self:TrackUnit('target')
+	self:StartTackingUnit('target')
 end
 
 
@@ -202,10 +219,17 @@ end
 -- Entering/leaving combat
 ---------------------------------
 
+function InteractNearest:StartTacking()
+	-- StartTackingUnit() calls OverrideBindings() if necessary.
+	local unit =  self:StartTackingUnit('mouseover')  or  self:StartTackingUnit('target')
+	self:Show()    -- Request OnUpdate() calls.
+end
+
+
 function InteractNearest:PLAYER_REGEN_ENABLED(event)
 	-- Called by ImmersiveAction:PLAYER_REGEN_ENABLED(event)
 	-- to update OverridesIn.InteractNearest.*
-	-- in TrackUnit(), before OverrideBindings:OverrideCommands(..)
+	-- in StartTackingUnit(), before OverrideBindings:OverrideCommands(..)
 	Log.Event(event)
 	self:RegisterEvent('UPDATE_MOUSEOVER_UNIT')
 	self:RegisterEvent('PLAYER_TARGET_CHANGED')
@@ -214,27 +238,18 @@ function InteractNearest:PLAYER_REGEN_ENABLED(event)
 	if event == 'PLAYER_REGEN_ENABLED' then  self.TargetLastHostile = 'TARGETLASTHOSTILE'  end
 
 	local handler = self.InCombatHandler
-	-- Update TargetCommand in protected environment in case :SetTargetEnemiesToo() was called.
-	-- Before OverrideBindings(), that will use it.
-	-- handler.Env.TargetCommand = self.TargetCommand
-	-- handler:RunAttribute('_setTargetCommand', self.TargetCommand)
-	-- handler:RunSnippet('_setTargetCommand', self.TargetCommand)
-	handler:Execute(" TargetCommand = ... ", self.TargetCommand)
-	
-	self:StartTacking()
-end
+	-- Update TargetCommand in protected environment in case :SetTargetCommand() was in combat.
+	self:SetTargetCommand(self.TargetCommand)
 
-function InteractNearest:StartTacking()
-	-- TrackUnit() calls OverrideBindings() if necessary.
-	if  not self:TrackUnit('mouseover')  then  self:TrackUnit('target')  end
-	self:Show()    -- Request OnUpdate() calls.
+	-- StartTacking() -> OverrideBindings() will use the uploaded TargetCommand.
+	self:StartTacking()
 end
 
 
 function InteractNearest:PLAYER_REGEN_DISABLED(event)
 	Log.Event(event)
-	self:UnregisterEvent("UPDATE_MOUSEOVER_UNIT")
-	self:UnregisterEvent("PLAYER_TARGET_CHANGED")
+	self:UnregisterEvent('UPDATE_MOUSEOVER_UNIT')
+	self:UnregisterEvent('PLAYER_TARGET_CHANGED')
 	self:Hide()    -- Stop OnUpdate() calls.
 end
 
@@ -242,12 +257,6 @@ end
 ---------------------------------
 -- Enable if there are dynamic bindings:  OverridesIn.InteractNearest[dynamicCommand]
 ---------------------------------
-
-function InteractNearest:SetTargetEnemiesToo(enable)
-	self.TargetCommand = enable and 'TARGETNEAREST' or 'TARGETNEARESTFRIEND'
-	if not InCombatLockdown() then  self.InCombatHandler.Env.TargetCommand = TargetCommand  end
-end
-
 
 function InteractNearest:Activate()
 	local active =  self.enabled  and  nil~=next(self.keyOverrides)
@@ -281,6 +290,7 @@ function InteractNearest:UpdateOverrideBindings()
 	self:Activate()
 end
 
+
 function InteractNearest:Enable(enable)
 	if  not self.enable == not enable  then  return nil  end
 	self.enabled = not not enable
@@ -300,6 +310,8 @@ function InteractNearest.CaptureBindings(overrides)
 	end
 	return keyOverrides
 end
+
+
 
 
 ---------------------------------
@@ -326,8 +338,8 @@ local function CheckUnitIsLootable(unit)
 end
 
 
-function InteractNearest:TrackUnit(unit)
-	print("InteractNearest:TrackUnit("..unit..")")
+function InteractNearest:StartTackingUnit(unit)
+	print("InteractNearest:StartTackingUnit("..unit..")")
 
 	local interact = CheckUnitIsInteractable(unit)
 	local loot = not interact and CheckUnitIsLootable(unit)
@@ -342,7 +354,7 @@ function InteractNearest:TrackUnit(unit)
 		self.TargetLastHostile = nil
 	end
 
-	print("InteractNearest:TrackUnit(..) -> new trackedUnit = "..tostring(unit))
+	print("InteractNearest:StartTackingUnit(..) -> new trackedUnit = "..tostring(unit))
 	self.trackedUnit = unit
 	self.InteractCommand = unit == 'mouseover' and 'INTERACTMOUSEOVER' or 'INTERACTTARGET'
 	-- Enable OnUpdate monitor if there is a tracked unit.

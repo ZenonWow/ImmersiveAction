@@ -1,10 +1,78 @@
+
+
+----------------------------------------------
+-- Testing different binding configurations --
+----------------------------------------------
+
 /run SetBinding('BUTTON4','CAMERAORSELECTORMOVE')
 /run SetBinding('BUTTON5','COMBATMODE_ENABLE')
 /run SetBinding('BUTTON5','COMBATMODE_TOGGLE')
-/run SetBinding('ALT-BUTTON1','CAMERAORSELECTORMOVE')
-/run SetBinding('ALT-BUTTON2','TURNORACTION')
+/run SetBinding('ALT-BUTTON1','CAMERAORSELECTORMOVE') SetBinding('ALT-BUTTON2','TURNORACTION')
+/run SetBinding('ALT-BUTTON1','MOVEANDSTEER') SetBinding('ALT-BUTTON2','AUTORUN')
 /run SetBinding('SHIFT-BUTTON1','STRAFELEFT') SetBinding('SHIFT-BUTTON2','STRAFERIGHT')
+/run SetBinding('CTRL-BUTTON1','INTERACTNEAREST') SetBinding('CTRL-BUTTON2','INTERACTMOUSEOVER')
+/run SetBinding('CTRL-BUTTON1','AUTORUN') SetBinding('CTRL-BUTTON2','AUTORUN')
+/run SetBinding('ALT-BUTTON1','AUTORUN') SetBinding('ALT-BUTTON2','AUTORUN')
+/run SetBinding('ALT-BUTTON1','ToggleActionMode') SetBinding('ALT-BUTTON2','AUTORUN')
+/run SetBinding('BUTTON4','MOVEANDSTEER')
+/run SetBinding('BUTTON4','AUTORUN')
+/run SetBinding('ALT-BUTTON4','ToggleActionMode') SetBinding('BUTTON5','ToggleActionMode')
 
+
+/dump GetBindingByKey('BUTTON1'), GetBindingByKey('BUTTON2'), GetBindingByKey('ALT-BUTTON1'), GetBindingByKey('ALT-BUTTON2')
+/dump GetBindingByKey('CTRL-BUTTON1'), GetBindingByKey('CTRL-BUTTON2'), GetBindingByKey('SHIFT-BUTTON1'), GetBindingByKey('SHIFT-BUTTON2')
+
+
+
+
+----------------------
+-- Binding profiles --
+----------------------
+
+MouseMove:
+--
+https://www.youtube.com/watch?v=u1OyYZn3fhU
+/run SetBinding('BUTTON1','CAMERAORSELECTORMOVE')
+/run SetBinding('BUTTON2','TURNORACTION')
+/run SetBinding('BUTTON4','STRAFELEFT')
+/run SetBinding('BUTTON5','STRAFERIGHT')
+/run SetBinding('ALT-BUTTON4','AUTORUN')
+/run SetBindingMacro('BUTTON3','/cast Rain Of Fire')
+/run SetBindingMacro('ALT-BUTTON3','/petmoveto')
+/run SetBindingMacro('MOUSEWHEELUP','/petattack')
+/run SetBindingMacro('MOUSEWHEELDOWN','/petpassive /petfollow')
+/run SetBindingItem('ALT-MOUSEWHEELDOWN','pvp trinket')
+/run SetBindingItem('ALT-MOUSEWHEELUP','racial freemove')
+/run SetBinding('CTRL-MOUSEWHEELUP','ZOOMOUT')
+/run SetBinding('CTRL-MOUSEWHEELDOWN','ZOOMIN')
+Move: BUTTON1+BUTTON2
+
+
+DAoC - Dark Age of Camelot:
+--
+/run SetBinding('BUTTON1','MOVEFORWARD')
+/run SetBinding('BUTTON2','MOVEBACKWARD')
+/run SetBinding('BUTTON4','STRAFELEFT')
+/run SetBinding('BUTTON5','STRAFERIGHT')
+
+
+Tab-targeting with mousebuttons
+--
+/run SetBinding('BUTTON1','TARGETNEARESTFRIEND')
+/run SetBinding('BUTTON2','TARGETNEARESTENEMY')
+
+TARGETLASTHOSTILE / TARGETLASTTARGET
+TARGETNEARESTENEMY / TARGETPREVIOUSENEMY / TARGETSCANENEMY
+TARGETNEARESTENEMYPLAYER / TARGETPREVIOUSENEMYPLAYER
+
+
+
+
+
+
+----------------------------------------
+-- ExpectedMouselook() design decisions --  Patching the primitive and chaotic bindings state machine.
+----------------------------------------
 
 Mode change:
 --
@@ -53,43 +121,4 @@ and explicitly enabling Mouselook for MoveForward if GetMouseButtonClicked(), by
 
 
 
-
-Profiles:
-===
-
-MouseMove:
---
-https://www.youtube.com/watch?v=u1OyYZn3fhU
-/run SetBinding('BUTTON1','CAMERAORSELECTORMOVE')
-/run SetBinding('BUTTON2','TURNORACTION')
-/run SetBinding('BUTTON4','STRAFELEFT')
-/run SetBinding('BUTTON5','STRAFERIGHT')
-/run SetBinding('ALT-BUTTON4','AUTORUN')
-/run SetBindingMacro('BUTTON3','/cast Rain Of Fire')
-/run SetBindingMacro('ALT-BUTTON3','/petmoveto')
-/run SetBindingMacro('MOUSEWHEELUP','/petattack')
-/run SetBindingMacro('MOUSEWHEELDOWN','/petpassive /petfollow')
-/run SetBindingItem('ALT-MOUSEWHEELDOWN','pvp trinket')
-/run SetBindingItem('ALT-MOUSEWHEELUP','racial freemove')
-/run SetBinding('CTRL-MOUSEWHEELUP','ZOOMOUT')
-/run SetBinding('CTRL-MOUSEWHEELDOWN','ZOOMIN')
-Move: BUTTON1+BUTTON2
-
-
-DAoC - Dark Age of Camelot:
---
-/run SetBinding('BUTTON1','MOVEFORWARD')
-/run SetBinding('BUTTON2','MOVEBACKWARD')
-/run SetBinding('BUTTON4','STRAFELEFT')
-/run SetBinding('BUTTON5','STRAFERIGHT')
-
-
-Targeting
---
-/run SetBinding('BUTTON1','TARGETNEARESTFRIEND')
-/run SetBinding('BUTTON2','TARGETNEARESTENEMY')
-
-TARGETLASTHOSTILE / TARGETLASTTARGET
-TARGETNEARESTENEMY / TARGETPREVIOUSENEMY / TARGETSCANENEMY
-TARGETNEARESTENEMYPLAYER / TARGETPREVIOUSENEMYPLAYER
 

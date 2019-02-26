@@ -1,0 +1,113 @@
+https://wow.gamepedia.com/API_GetPlayerFacing
+--
+facing = GetPlayerFacing()
+Returns the direction the player is facing in radians, in the [0, 2π] range, where 0 is North and values increase counterclockwise.
+Indicates the direction the player model is (normally) facing and in which the player will move if he begins walking forward; not the camera orientation.
+Patch changes
+Legion Patch 7.1.0 (2016-10-25): Returns nil while in a restricted area (instance/battleground/arena). 
+Wrath of the Lich King Patch 3.1.0 (2009-04-14): Added. 
+
+
+
+
+
+https://wow.gamepedia.com/API_GetUnitSpeed
+--
+Returns a value representing the moving speed of a unit. Added in Patch 3.0.1.
+
+currentSpeed, runSpeed, flightSpeed, swimSpeed = GetUnitSpeed("unit");
+Arguments
+unit 
+String (unitId) - Unit to query the speed of. This has not been tested with all units but does work for "player" units.
+Returns
+currentSpeed 
+Number - current movement speed in yards per second (normal running: 7; an epic ground mount: 14)
+runSpeed 
+Number - the maximum speed on the ground, in yards per second (including talents such as Pursuit of Justice and ground mounts)
+flightSpeed 
+Number - the maximum speed while flying, in yards per second (the unit need to be on a flying mount to get the flying speed)
+swimSpeed 
+Number - the maximum speed while swimming, in yards per second (not tested but it should be as the flying mount)
+Example
+The following snippet prints your current movement speed in percent:
+
+/script print(string.format("Current speed: %d%%", GetUnitSpeed("player") / 7 * 100))
+Notes
+As of 4.2, runSpeed, flightSpeed, swimSpeed returns were added. It seem you can also get target unit speed (not tested on the opposite faction).
+A constant exists: "BASE_MOVEMENT_SPEED" which is equal to 7 (4.2).
+
+
+
+
+
+https://wowwiki.fandom.com/wiki/API_TurnOrActionStart
+--
+This function is PROTECTED, and can only be called from Blizzard code.
+Begin "Right click" in the 3D game world.
+
+TurnOrActionStart()
+This function is called when right clicking in the 3D world.
+Calling this function clears the "mouseover" unit.
+If you hook this function be sure to grab UnitName("mouseover") or target the "mouseover" unit because once the original function is called, the "mouseover" will not have a value.
+When used alone, puts you into a "mouseturn" mode until TurnOrActionStop is called.
+IMPORTANT: The normal restrictions regarding hardware event initiations still apply to anything this function might do.
+
+
+
+
+
+https://wowwiki.fandom.com/wiki/API_TurnOrActionStop
+--
+This function is PROTECTED, and can only be called from Blizzard code.
+End "Right click" in the 3D game world.
+
+TurnOrActionStop()
+This function is called when right clicking in the 3D world. Most usefull it can initiate attack on the selected unit if no move occurs.
+When used alone, can cancel a "mouseturn" started by a call to TurnOrActionStart.
+IMPORTANT: The normal restrictions regarding hardware event initiations still apply to anything this function might do.
+
+
+
+
+
+https://wowwiki.fandom.com/wiki/API_CameraOrSelectOrMoveStart
+--
+This function is PROTECTED, and can only be called from Blizzard code.
+Begin "Left click" in the 3D world.
+
+CameraOrSelectOrMoveStart()
+This function is called when left-clicking in the 3-D world. It is most useful for selecting a target for a pending spell cast.
+Calling this function clears the "mouseover" unit.
+If you hook this function, be sure to grab UnitName("mouseover") or target the "mouseover" unit because once the original function is called, the "mouseover" will not have a value.
+When used alone, puts you into a "mouselook" mode until CameraOrSelectOrMoveStop is called.
+IMPORTANT: The normal restrictions regarding hardware event initiations still apply to anything this function might do.
+
+
+
+
+
+https://wowwiki.fandom.com/wiki/API_CameraOrSelectOrMoveStop
+--
+This function is PROTECTED, and can only be called from Blizzard code.
+End "Left click" in the 3D game world.
+
+CameraOrSelectOrMoveStop([stickyFlag])
+stickyFlag - Flag (optional) - If present and set then any camera offset is 'sticky' and remains until explicitly cancelled.
+This function is called when left clicking in the 3-D world.
+When used alone, can cancel a "mouselook" started by a call to CameraOrSelectOrMoveStart.
+IMPORTANT: The normal restrictions regarding hardware event initiations still apply to anything this function might do.
+
+
+
+
+
+https://us.battle.net/forums/en/wow/topic/15538106676#post-3
+--
+Ro <Driven> - 110 Gnome Warrior
+Dec 17, 2014
+There's a new event PLAYER_STARTED_MOVING (and PLAYER_STOPPED_MOVING) that covers all of those except jumping.
+
+
+
+
+

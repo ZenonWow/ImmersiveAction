@@ -1,11 +1,18 @@
-local _G, ADDON_NAME, _ADDON = _G, ...
-local IA = _G.ImmersiveAction or {}  ;  _G.ImmersiveAction = IA
+local GL, ADDON_NAME, _ADDON = _G, ...
+local IA = GL.ImmersiveAction or {}  ;  GL.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 
 assert(_ADDON.WindowList, "Include WindowList.lua before WindowHooks.lua")
 local getSubField = assert(_ADDON.getSubField, "getSubField() missing from WindowList.lua")
-local tDeleteItem = _G.tDeleteItem  -- from FrameXML/Util.lua
+local tDeleteItem = GL.tDeleteItem  -- from FrameXML/Util.lua
 local colors = IA.colors
+
+local DB = GL.ImmersiveActionDB or {}  ;  GL.ImmersiveActionDB = DB
+DB.NonHook = ""
+DB.ErrHook = ""
+DB.ErrFrames = {}
+DB.GoodFrames = ""
+DB.MissFrames = ""
 
 IA.WindowsOnScreen = {}
 IA.HookedFrames = {}
@@ -27,17 +34,17 @@ local FramesToHookMap = {}
 
 
 local indexOf = LibShared.Require.indexOf
-local removeFirst = assert(_G.tDeleteItem, "Bliz deleted FrameXML/Util.lua # function tDeleteItem()")
+local removeFirst = assert(GL.tDeleteItem, "Bliz deleted FrameXML/Util.lua # function tDeleteItem()")
 
-local function setInsertLast(item)
-	if  indexOf(self, item)  then  return false  end
-	table.insert(self, item)
+local function setInsertLast(t, item)
+	if  indexOf(t, item)  then  return false  end
+	table.insert(t, item)
 	return true
 end
 --[[
-local function setReInsertLast(item)
-	local replaced = removeFirst(self, item)
-	table.insert(self, item)
+local function setReInsertLast(t, item)
+	local replaced = removeFirst(t, item)
+	table.insert(t, item)
 	return replaced
 end
 --]]
@@ -47,18 +54,18 @@ end
 -- OnShow OnHide hooks --
 -------------------------
 
-local function FrameOnShow(frame)
-	Log.Frame('  CM_FrameOnShow('.. colors.show .. frame:GetName() ..'|r)')
+function IA.FrameOnShow(frame)
+	Log.Frame('  IA.FrameOnShow('.. colors.show .. frame:GetName() ..'|r)')
 	-- if already visible do nothing
 	if  not setInsertLast(IA.WindowsOnScreen, frame)  then  return  end
 
-	self.commandState.ActionModeRecent = nil    -- There is a more recent event now.
+	IA.commandState.ActionModeRecent = nil    -- There is a more recent event now.
 	IA:UpdateMouselook(false, 'FrameOnShow')
 end
 
 
-local function FrameOnHide(frame)
-	Log.Frame('  CM_FrameOnHide('.. colors.hide .. frame:GetName() ..'|r)')
+function IA.FrameOnHide(frame)
+	Log.Frame('  IA.FrameOnHide('.. colors.hide .. frame:GetName() ..'|r)')
 	local removed= removeFirst(IA.WindowsOnScreen, frame)
 	if  not removed  then  return  end
 	
@@ -71,23 +78,53 @@ end
 -- Hook OnShow OnHide on a frame --
 -----------------------------------
 
-function  IA:HookFrame(frameName)
-	local frame
-	-- _G[frameName] and getglobal(frameName) does not work for child frames like "MovieFrame.CloseDialog"
-	if type(frameName)=='string' then  frame = _G[frameName]  or  getSubField(_G, frameName)
-	else  frame = frameName ; frameName = frame:GetName() or frame  end
+-- Take from a proper frame.
+local HookScript = IA.UserBindings.HookScript
+local STEP = 25
 
-	if  not frame  or  self.HookedFrames[frameName]  then  return frame  end
+
+local function DBAdd(listName, frameName)
+	local was = DB[listName]
+	local len = #was + #frameName
+	local pad = STEP - len % STEP
+	local nl = ""
+	if 4*STEP < len % (5*STEP) then
+		pad = pad-1
+		nl = "\n"
+	end
+	local padS = string.rep(" ", pad)
+	DB[listName] = was .. frameName .. padS .. nl
+end
+
+
+function  IA:HookFrame(frameName, frame)
+	-- GL[frameName] and getglobal(frameName) does not work for child frames like "MovieFrame.CloseDialog"
+	if not frame and type(frameName)=='string' then  frame = GL[frameName]  or  getSubField(GL, frameName)  end
+	if not frame  or  self.HookedFrames[frameName] then  return frame  end
+	if not frame.GetName then  print("No GetName():", frameName, frame, type(frame))  end
 
 	self.HookedFrames[frameName] = frame
 	
-	frame:HookScript('OnShow', FrameOnShow)
-	if  not frame:GetScript('OnShow')  then  frame:SetScript('OnShow', FrameOnShow)  end
-	frame:HookScript('OnHide', FrameOnHide)
-	if  not frame:GetScript('OnHide')  then  frame:SetScript('OnHide', FrameOnHide)  end
+	if not frame.HookScript then
+		print("  IA:HookFrame():  no HookScript -- ", frameName, frame, type(frame))
+		DBAdd('NonHook', frameName)
+		-- Stop annoying.
+		-- return frame
+	end
 	
-	if  frame:IsShown()  then
-		Log.Frame('  CM:HookUpFrames():  '.. colors.show .. frame:GetName() ..'|r is already visible')
+	local ok1, err1 = pcall(HookScript, frame, 'OnShow', IA.FrameOnShow)
+	if not ok1 then DB.ErrFrames[frameName] = err1 end
+	-- if  not frame:GetScript('OnShow')  then  frame:SetScript('OnShow', IA.FrameOnShow)  end
+	local ok2, err2 = pcall(HookScript, frame, 'OnHide', IA.FrameOnHide)
+	if ok1 and not ok2 then DB.ErrFrames[frameName] = err2 end
+	-- if  not frame:GetScript('OnHide')  then  frame:SetScript('OnHide', IA.FrameOnHide)  end
+	if ok1 and ok2
+	then  DBAdd('GoodFrames', frameName)
+	else  DBAdd('ErrHook', frameName)
+	end
+	
+	if  frame.IsShown and frame:IsShown()  then
+		Log.Frame('  IA:HookUpFrames():  '.. colors.show .. frameName ..'|r is already visible')
 		setInsertLast(IA.WindowsOnScreen, frame)
 	end
 	
@@ -110,12 +147,12 @@ function  IA:HookUpFrames()
 	end
 
 	-- Monitor UIPanelWindows{}:  main bliz windows.
-	for  frameName,frame  in  pairs(_G.UIPanelWindows)  do
-		self:HookFrame(frame)
+	for  frameName,frame  in  pairs(GL.UIPanelWindows)  do
+		self:HookFrame(frameName, frame)
 	end
 
 	-- Monitor UISpecialFrames[]:  some windows added by bliz FrameXML and also addons. No need to list them by name.
-	for  idx, frameName  in  ipairs(_G.UISpecialFrames)  do
+	for  idx, frameName  in  ipairs(GL.UISpecialFrames)  do
 		self:HookFrame(frameName)
 	end
 
@@ -135,9 +172,14 @@ function  IA:HookUpFrames()
 	end
 
 	self.FramesToHook= FramesToHookNew
-	if  0 < #FramesToHookNew  and  self:IsLogging('Init')  and  self.logging.Anomaly  then
+	if  0 < #FramesToHookNew  and  self.logging._on('Init')  and  self.logging.Anomaly  then
 		--local missingList= table.concat(FramesToHookNew, ', ')		-- this can be long
-		Log.Init('  CM:HookUpFrames():  missing '.. #FramesToHookNew ..' frames.  List them by entering   /dump ImmersiveAction.FramesToHook')
+		Log.Init('  IA:HookUpFrames():  missing '.. #FramesToHookNew ..' frames.  List them by entering   /dump ImmersiveAction.FramesToHook')
+	end
+	
+	DB.MissFrames = ""
+	for i,frameName in ipairs(FramesToHookNew) do
+		DBAdd('MissFrames', frameName)
 	end
 end
 
@@ -150,8 +192,9 @@ end
 hooksecurefunc('CreateFrame', function(frameType, frameName, ...)
 	if  not FramesToHookMap[frameName]  then  return  end
 	
+	print("IA.hook.CreateFrame()", frameName)
 	local frame = IA:HookFrame(frameName)
-  if  frame  then
+  if frame then
 		FramesToHookMap[frameName] = nil
 		tDeleteItem(IA.FramesToHook, frameName)
 	end
@@ -164,6 +207,17 @@ end)
 -- Listen for quest events. These fire even if Immersion addon hides the QuestFrame.
 ------------------------------
 
+function IA:RegisterWindowEvents(enable)
+	if enable ~= false then
+		self:RegisterEvent('QUEST_PROGRESS')
+		self:RegisterEvent('QUEST_FINISHED')
+	else
+		self:UnregisterEvent('QUEST_PROGRESS')
+		self:UnregisterEvent('QUEST_FINISHED')
+	end
+end
+
+
 function IA:QUEST_PROGRESS(event)
 	-- Event QUEST_PROGRESS received as the quest frame is shown when talking to an npc
 	Log.Event(colors.show .. event .. colors.restore)
@@ -171,6 +225,7 @@ function IA:QUEST_PROGRESS(event)
 	self.commandState.ActionModeRecent = nil    -- There is a more recent event now.
 	self:UpdateMouselook(false, event)
 end
+
 
 function IA:QUEST_FINISHED(event)
 	-- Event QUEST_FINISHED received as the quest frame is closed after talking to an npc
@@ -186,7 +241,7 @@ end
 -- Return an onscreen frame --
 ------------------------------
 
-function IA:CheckForFramesOnScreen()
+function IA:AnyFramesOnScreen()
 	return  self.WindowsOnScreen[1]
 end
 

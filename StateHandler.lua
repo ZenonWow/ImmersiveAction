@@ -5,25 +5,6 @@ local Log = IA.Log or {}  ;  IA.Log = Log
 local colorBoolStr = IA.colorBoolStr
 local colors = IA.colors
 
-IA.commandState = {}
-
---[[
--- commandGroups:  `false` value here means 'not pressed'
-IA.commandGroups = {
-	Turn       = { TurnLeft=false, TurnRight=false },
-	Pitch      = { PitchUp=false, PitchDown=false },
-	MoveKeys   = { MoveForward=false, MoveBackward=false, StrafeLeft=false, StrafeRight=false },
-	Mouselook  = { MoveAndSteer=true, TargetPriorityHighlight=true },  --, TurnOrAction=true }, -- false in ActionMode
-}
---]]
--- commandGroups:  `nil` is 'not pressed'
-IA.commandGroups = {
-	Turn       = {},
-	Pitch      = {},
-	MoveKeys   = {},
-	Mouselook  = {},
-}
-
 --[[ Analyzing key press state:
 -- commands can get stuck in pressed state if the binding is changed and the "up" event goes to a different command
 /dump ImmersiveAction.db.profile.enabledOnLogin
@@ -49,6 +30,38 @@ IA.commandGroups = {
 --]]
 
 
+------------------------------
+--- IA.commandState is the key/binding/command pressed state map (action->pressed).
+-- This is the input to IA:ExpectedMouselook().
+-- IA:ProcessCommand() keeps this updated with UI actions/events.
+--
+IA.commandState = {}
+
+-- commandGroups:  `nil` is 'not pressed'
+IA.commandGroups = {
+	Turn       = {},
+	Pitch      = {},
+	MoveKeys   = {},
+	Mouselook  = {},
+}
+
+--[[
+-- commandGroups:  `false` value here means 'not pressed'
+IA.commandGroups = {
+	Turn       = { TurnLeft=false, TurnRight=false },
+	Pitch      = { PitchUp=false, PitchDown=false },
+	MoveKeys   = { MoveForward=false, MoveBackward=false, StrafeLeft=false, StrafeRight=false },
+	Mouselook  = { MoveAndSteer=true, TargetPriorityHighlight=true },  --, TurnOrAction=true }, -- false in ActionMode
+}
+--]]
+
+local DisablesAutoRun = {
+	MoveAndSteer	= 1,
+	MoveForward	  = 1,
+	MoveBackward	= 1,
+}
+
+
 
 
 ------------------
@@ -60,7 +73,7 @@ function IA:SetActionMode(enable)
 	if cstate.ActionModeRecent == enable then  return  end
 	cstate.ActionModeRecent = enable
 	cstate.ActionMode = enable
-	self:OverrideCommandsIn('ActionMode', enable)
+	self.OverrideBindings:OverrideCommandsIn('ActionMode', enable)
 end
 
 
@@ -78,7 +91,7 @@ function  IA:ResetState()
 	wipe(cstate)
 	
 	-- Reset group counters
-	local groups= self.commandGroups
+	local groups = self.commandGroups
 	for  groupName,group  in  pairs(groups)  do  if  next(group)  then
 		local keys = ""
 		for k,v in group do  keys = keys..k  end
@@ -94,31 +107,12 @@ end
 -- State handling `business` logic --
 -------------------------------------
 
-function IA:SetCommandState(cmdName, pressed)
-	-- Do not accept multiple keys bound to the same command to be pressed at the same time.
-	-- That results in multiple calls with same cmdName, pressed. Press 2 buttons, release 1,
-	-- and the client thinks both are released.
-	-- Minor issue compared to its counter-case: if a binding is changed mid-button-press,
-	-- bliz will release the new binding, not the one that was pressed originally.
-	-- This causes stuck keys, stuck MouselookMode, unable to get back the cursor :-D
-	local keystate =  pressed  and  'down'  or  'up'
+function IA:ProcessCommand(cmdName, pressed)
 	local cstate = self.commandState
 
-	if  not pressed == not cstate[cmdName]  then
-		-- Patch MoveAndSteer press + MouselookOverrideBinding(MoveAndSteer->MoveForward) + MoveForward release
-		-- to stop Mouselook started by MoveAndSteer.
-		if cmdName == 'MoveForward' and cstate.MoveAndSteer then
-			Log.Anomaly("  CM - SetCommandState(".. IA.colors[keystate] .. cmdName .." ".. keystate:upper() .."|r) - patched to MoveAndSteer")
-			cmdName = 'MoveAndSteer'
-		else
-			return false
-		end
-	else
-		if cmdName == 'MoveForward' and GetMouseButtonClicked() then
-			Log.Anomaly("  CM - SetCommandState(".. IA.colors[keystate] .. cmdName .." ".. keystate:upper() .."|r) - patched to MoveAndSteer")
-			cmdName = 'MoveAndSteer'
-		end
-  end
+	if pressed and cstate.AutoRun then  self:CheckAutoRun(cmdName, pressed)  end
+	cmdName = self:CheckStuckState(cmdName, pressed)
+	self:CheckActionMode(cmdName, pressed)
 	
 	-- TurnOrAction inverts the previous Mouselook state (the state before it was pressed).
 	if cmdName == 'TurnOrAction' then
@@ -130,15 +124,80 @@ function IA:SetCommandState(cmdName, pressed)
 		-- therefore IsMouselooking() returns true in any case.
 	end
 
-	-- Update ActionMode to retain lastMouselook after specific buttons were pressed.
+	self:SetCommandState(cmdName, pressed)
+	Log.Command("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed)..")")
+end
+
+
+------------------------------
+--
+function IA:CheckStuckState(cmdName, pressed)
+	local cstate = self.commandState
+	-- Do not accept multiple keys bound to the same command to be pressed at the same time.
+	-- That results in multiple calls with same cmdName, pressed. Press 2 buttons, release 1,
+	-- and the client thinks both are released.
+	-- Minor issue compared to its counter-case: if a binding is changed mid-button-press,
+	-- bliz will release the new binding, not the one that was pressed originally.
+	-- This causes stuck keys, stuck MouselookMode, unable to get back the cursor :-D
+
+	if  not pressed == not cstate[cmdName]  then
+		-- Patch MoveAndSteer press + MouselookOverrideBinding(MoveAndSteer->MoveForward) + MoveForward release
+		-- to stop Mouselook started by MoveAndSteer.
+		if cmdName == 'MoveForward' and cstate.MoveAndSteer then
+			Log.Anomaly("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed)..") - patched to MoveAndSteer")
+			cmdName = 'MoveAndSteer'
+		else
+			local suffix= pressed  and  "key pressed again without being released. Stuck key?"  or  "key released without being pressed before."
+			Log.Anomaly("  IA:ProcessCommand("..colors.red..cmdName.."|r):  "..suffix)
+		end
+	else
+		if cmdName == 'MoveForward' and GetMouseButtonClicked() then
+			Log.Anomaly("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed)..") - patched to MoveAndSteer")
+			cmdName = 'MoveAndSteer'
+		end
+  end
+	return cmdName
+end
+
+
+------------------------------
+-- Check if the game disables AutoRun. By check i mean make an educated guess. Cheers for the api disaigners.
+--
+function IA:CheckAutoRun(cmdName, pressed)
+	local cstate = self.commandState
+	-- Quite a few click/binding combos disable AutoRun. Try to detect *all* such combinations.
+	-- Ex. AutoRun + B1 + B2 -> AutoRun stops, commandState.AutoRun is stuck opposite of the real.
+	-- AutoRun + MoveAndSteer (out-of-combat remapped to TurnWithoutAction)
+	-- Checking GetUnitSpeed() is still there to catch any unforeseen corner cases.
+	-- Credits for the idea:  https://wow.curseforge.com/projects/mouselookhandler/pages/mouselook-while-moving-including-autorun
+	if cmdName=='CameraOrSelectOrMove' and cstate.TurnOrAction
+	or cmdName=='TurnOrAction' and cstate.CameraOrSelectOrMove
+	or DisablesAutoRun[cmdName]    -- Forward/backward movement disables AutoRun.
+	then  self:SetCommandState('AutoRun', false)
+	elseif 0 == GetUnitSpeed('player') then
+		self:SetCommandState('AutoRun', false)
+		Log.Anomaly("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed).."):  Disabled commandState."..colors.AutoRun.."AutoRun|r, state would have been inverted, and MoveAndSteer rebinding to TurnWithoutAction stuck.")
+	end
+end
+
+
+------------------------------
+--
+function IA:CheckActionMode(cmdName, pressed)
+	-- Update ActionMode in response to certain inputs, when
+	-- it gives a more fluent user experience to disable/enable ActionMode automatically.
 	if not pressed then
 		if not IA.lastMouselook then
-			-- Clicking LeftButton (turning the camera away from the direction your character looks) will disable ActionMode.
+			-- Turning the camera away from the direction your character looks (clicking LeftButton) will disable ActionMode.
+			-- If it stays on the first mouse movement will yank your character to the camera direction, without specific command from you.
+			-- Clicking the RightButton will still instantly turn the character to the camera direction.
 			if  cmdName=='CameraOrSelectOrMove'  and  IA.disableWithLookAround  then  IA:SetActionMode(false)  end
 		else
-			-- After pressing MoveAndSteer:  ActionMode will stay enabled.
+			-- After pressing MoveAndSteer:  enable ActionMode, it feels fluent to keep turning the character with the mouse, without pressing buttons.
+			-- If not, then it can be disabled in settings.
 			if  cmdName=='MoveAndSteer' and  IA.enableAfterMoveAndSteer  then  IA:SetActionMode(true)  end
 			-- After pressing LeftButton and RightButton together:  ActionMode will stay enabled.
+			-- It's the same as MoveAndSteer but with two buttons. Can be enabled separately.
 			-- Rule:  one button released while the other is pressed.
 			if IA.enableAfterBothButtons then
 				if  cmdName=='CameraOrSelectOrMove' and self.TurnOrAction
@@ -147,25 +206,31 @@ function IA:SetCommandState(cmdName, pressed)
 			end
 		end
 	end
-	
-	-- Set command pressed state. This changes the result of IA:ExpectedMouselook().
-	cstate[cmdName]= pressed
+end
+
+
+------------------------------
+-- Store command's active state and update it's group's state.
+--
+function IA:SetCommandState(cmdName, active)
+	-- Set command active state. This changes the result of IA:ExpectedMouselook().
+	self.commandState[cmdName] = active
 
 	-- Update group state.
-	local groupName= self.commandsHooked[cmdName]
-	if  groupName  then  self:SetGroupCommand(groupName, cmdName, pressed)  end
+	local groupName = self.commandsHooked[cmdName]
+	if  groupName  then  self:SetGroupCommand(groupName, cmdName, active)  end
 
 	-- Update bindings.
-	if cmdName=='AutoRun' then  IA:OverrideCommandsIn(cmdName, pressed)  end
+	if cmdName=='AutoRun' then  IA.OverrideBindings:OverrideCommandsIn(cmdName, nil)  end
 
 	return true
 end
 
 
-function IA:SetGroupCommand(groupName, cmdName, pressed)
+function IA:SetGroupCommand(groupName, cmdName, active)
 	local group= self.commandGroups[groupName]
-	group[cmdName] = pressed or nil
-	cstate[groupName] = next(group)
+	group[cmdName] = active or nil
+	self.commandState[groupName] = next(group)
 end
 
 
@@ -187,7 +252,7 @@ function  IA:UpdateMouselook(possibleTransition, event)
 	
 	local expState, reason= self:ExpectedMouselook()
 	if  possibleTransition ~= nil  and  expState ~= possibleTransition  and  expState ~= currentState  and  not outsideChange  then
-		Log.Anomaly('  CM:Update('.. event:sub(1,16) ..'):  '.. colors.yellow .. reason ..'|r->'.. colorBoolStr(expState, colors.red)  ..' is not possibleTransition='.. colorBoolStr(possibleTransition))
+		Log.Anomaly('  IA:Update('.. event:sub(1,16) ..'):  '.. colors.yellow .. reason ..'|r->'.. colorBoolStr(expState, colors.red)  ..' is not possibleTransition='.. colorBoolStr(possibleTransition))
 	end
 	
 	-- Report every update, reason and result for debugging
@@ -195,7 +260,7 @@ function  IA:UpdateMouselook(possibleTransition, event)
 	local stateColor= (expState ~= currentState)  or  outsideChange and colors.red
 	
 	local stateStr= colorBoolStr(expState, stateColor)
-	local prefix= 'CM:Update('.. colorBoolStr(possibleTransition) ..','.. colors.event .. event:sub(1,16) ..'|r):  '
+	local prefix= 'IA:Update('.. colorBoolStr(possibleTransition) ..','.. colors.event .. event:sub(1,16) ..'|r):  '
 	--local suffix= colors.lightblue .. reason ..'|r->'.. stateStr .. '|n------'
 	local suffix= reason ..'->'.. stateStr			-- .. '|n------'
 	
@@ -227,10 +292,10 @@ IA.lastMouselook= not not IsMouselooking()
 -- 
 -- Calculates the effective Mouselook state in a declarative manner,
 -- based on 13 game state parameters collected from user actions and game events.
--- The evaluation order is a delicate priority crafted to get the most
--- natural result in every circumstance. 2^13 = 8k distinct inputs
--- include many corner cases and quirks of the wow client.
--- In one word: it can be broken by looking at it the wrong way.
+-- The evaluation order is a delicate priority crafted to get the
+-- most fluent result ganeplay-wise in every circumstance.
+-- 2^13 = 8k distinct inputs include many corner cases and quirks of the wow client.
+-- In short: it can be broken by looking at it the wrong way.
 --
 function IA:ExpectedMouselook()
 	-- local groups = self.commandGroups
@@ -262,7 +327,7 @@ function IA:ExpectedMouselook()
 
 	-- MoveAndSteer,TargetScanEnemy,TargetNearestEnemy takes precedence over WindowsOnScreen, SpellIsTargeting and CursorPickedUp.
 	-- Maybe all Move,Strafe bound to mouse button should do so. In that case extra logic is needed to detect when Move is caused by a mouse button.
-	if  cstate.Mouselook  then  return true, "Mouselook:"..cstate.Mouselook  end		-- 'MoveAndSteer, ScanEnemy', addons using MouselookStart()  end
+	if  cstate.Mouselook  then  return true, "Mouselook:"..tostring(cstate.Mouselook)  end		-- 'MoveAndSteer, ScanEnemy', addons using MouselookStart()  end
 
 	if  cstate.enableModPressed   then  return true,  'enableModPressed'   end
 	if  cstate.disableModPressed  then  return false, 'disableModPressed'  end
@@ -276,8 +341,9 @@ function IA:ExpectedMouselook()
 	--if  cstate.CursorObjectOrSpellTargeting  then  return false, 'CursorObjectOrSpellTargeting'  end
 
 	-- WindowsOnScreen are higher priority than  enableWithMoveKeys:Move,Strafe.
-	-- if  self:CheckForFramesOnScreen()  then  return false, 'WindowsOnScreen'  end
-	if  0 < #IA.WindowsOnScreen  then  return false, 'WindowsOnScreen:'..(IA.WindowsOnScreen[1]:GetName() or "<noname>")  end
+	-- if  self:AnyFramesOnScreen()  then  return false, 'WindowsOnScreen'  end
+	local frame = IA:AnyFramesOnScreen()
+	if  frame  then  return false, 'WindowsOnScreen:'..tostring(frame.GetName and frame:GetName() or frame)  end
 
 	-- Move,Strafe commands enable if enableWithMoveKeys and no WindowsOnScreen.
 	if  self.db.profile.enableWithMoveKeys  and  cstate.MoveKeys  then

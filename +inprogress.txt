@@ -1,0 +1,18 @@
+
+my/notes/* -> wow/*
+([^\s~=])=   ->   \1 = 
+AutoRun Click -> MouseTurn
+TurnOrAction -> MouseTurn
+others? ->
+commandState -> activeCommands
+TurnNoInteract -> TurnWithoutInteract, SetCommandState'MouseTurn'
+SetCommandState -> SetCommandActive
+CURSOR_UPDATE
+isModifierPressedFunc -> Shared
+
+QUEST_PROGRESS:  see leatrix for previous event
+BANK, etc. events:  support any bag addon
+auction,tradeskill ditto
+
+Bindings.xml
+Interact
