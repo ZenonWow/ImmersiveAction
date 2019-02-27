@@ -1,5 +1,5 @@
-local _G, ADDON_NAME, _ADDON = _G, ...
-local IA = _G.ImmersiveAction or {}  ;  _G.ImmersiveAction = IA
+local GL, ADDON_NAME, ADDON = _G, ...
+local IA = GL.ImmersiveAction or {}  ;  GL.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 
 
@@ -27,9 +27,9 @@ BINDING_NAME_TURNORACTION 				= "Turn or Interact (RightButton default)"
 ------------------------------------------
 
 -- Save original MouselookStart, then securehook the global to catch addon usage.
-IA.IsMouselooking = _G.IsMouselooking
-IA.MouselookStart = _G.MouselookStart
-IA.MouselookStop  = _G.MouselookStop
+IA.IsMouselooking = GL.IsMouselooking
+IA.MouselookStart = GL.MouselookStart
+IA.MouselookStop  = GL.MouselookStop
 
 IA.commandsHooked = {
 	TurnLeft			= 'Turn',
@@ -53,7 +53,7 @@ IA.commandsHooked = {
 }
 
 local CommandStopFunc = {
-	TargetPriorityHighlight	= _G.TargetPriorityHighlightStart and 'TargetPriorityHighlightEnd' or false,
+	TargetPriorityHighlight	= GL.TargetPriorityHighlightStart and 'TargetPriorityHighlightEnd' or false,
 }
 
 --[[
@@ -136,7 +136,7 @@ function IA:HookCommands()
 	self.hooked= nil		-- free up, not used until /reload
 	
 	for  funcName,hookFunc  in  pairs(UniqueHooks)  do
-		if  _G[funcName]  then
+		if  GL[funcName]  then
 			hooksecurefunc(funcName, hookFunc)
 		end
 	end
@@ -152,7 +152,7 @@ function IA.NotifyMouselookUsage()
 	if  IA.notifiedMouselook  or  IA.db.global.dontNotify  then  return  end
 	IA.notifiedMouselook = true
 	local callerFrame = 3  -- 0:debugstack, 1:this function, 2:MouselookStart (the hooked one), 3:caller (or another hook added later)
-	local callerStack = _G.debugstack(callerFrame,3,0)  -- read 3 frames to allow for tailcails (no filepath in those)
+	local callerStack = GL.debugstack(callerFrame,3,0)  -- read 3 frames to allow for tailcails (no filepath in those)
 	local callerPath = callerStack and callerStack:match("^(.-): ")
 	local msg = IA.colors.yellow.."ImmersiveAction|r:  another addon also uses MouselookStart(). If you experience unexpected mouse beaviour then consider disabling one addon. The call seems to originate from:  "..callerPath
 	print(msg)

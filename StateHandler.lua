@@ -1,6 +1,6 @@
 -- Methods for event handling, commandState update of IA, Mouselook, SmartTargeting
-local _G, ADDON_NAME, _ADDON = _G, ...
-local IA = _G.ImmersiveAction or {}  ;  _G.ImmersiveAction = IA
+local GL, ADDON_NAME, ADDON = _G, ...
+local IA = GL.ImmersiveAction or {}  ;  GL.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 local colorBoolStr = IA.colorBoolStr
 local colors = IA.colors

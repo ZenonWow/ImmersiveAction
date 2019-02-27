@@ -1,5 +1,5 @@
-local _G, ADDON_NAME, _ADDON = _G, ...
-local IA = _G.ImmersiveAction or {}  ;  _G.ImmersiveAction = IA
+local GL, ADDON_NAME, ADDON = _G, ...
+local IA = GL.ImmersiveAction or {}  ;  GL.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 
 -- Used from LibShared:
@@ -117,7 +117,7 @@ function UserBindings:UpdateUserBindings()
 	the new binding will receive the "up" event without a "down" event.
 	This results in unexpectedly entering or leaving ImmersiveAction when rebinding a command that changes ImmersiveAction.
 	--]]
-	local wasMouselooking = _G.IsMouselooking()
+	local wasMouselooking = GL.IsMouselooking()
 	if wasMouselooking then
 		-- Log.Anomaly('UserBindings:UpdateUserBindings() while IsMouselooking() could cause stuck keys, not updating bindings.')
 		-- return
@@ -203,7 +203,7 @@ end
 
 function OverrideBindings:ClearMouselookOverrideBindings()
 	for key,toCmd in pairsOrNil(self.MouselookOverrides) do
-		_G.SetMouselookOverrideBinding(key, nil)
+		GL.SetMouselookOverrideBinding(key, nil)
 	end
 	wipe(self.MouselookOverrides)
 end
@@ -215,7 +215,7 @@ function OverrideBindings:SetMouselookOverrideBindings(fromCmd, toCmd)
 		if LibShared.softassert(not self.MouselookOverrides[key]) then
 			LibShared.softassertf(fromCmd~='TURNORACTION' and fromCmd~='TARGETSCANENEMY', "SetMouselookOverrideBindings():  overriding bindings of %q to %q will cause stucking in Mouselook mode.", fromCmd, toCmd)
 			self.MouselookOverrides[key] = toCmd
-			_G.SetMouselookOverrideBinding(key, toCmd)
+			GL.SetMouselookOverrideBinding(key, toCmd)
 		end
 	end
 end
@@ -348,7 +348,8 @@ local MapButtonToKey = LibShared.MapButtonToKey
 -------------------------------
 local WorldClickHandler = CreateFrame('Frame', nil, nil, 'SecureHandlerMouseUpDownTemplate')
 IA.WorldClickHandler = WorldClickHandler
-_G.WCH = WorldClickHandler    -- Export to _G for DEBUG.
+-- Export to _G.WCH for DEVMODE.
+if GL.DEVMODE then  GL.WCH = GL.WCH or WCH  end
 
 -- Last GetTime() when the mouse was over a unit.
 WorldClickHandler.LastMouseoverTime = 0
@@ -595,7 +596,7 @@ function WorldClickHandler:InitSecureHandler()
 
 	handler.MouselookStop = IA.MouselookStop
 	handler:Execute(WorldClickHandler.InitSnippet)
-	handler.Env = _G.GetManagedEnvironment(handler)
+	handler.Env = GL.GetManagedEnvironment(handler)
 
 	-- handler:WrapScript(WorldFrame, 'OnMouseDown', prePressBody, nil)
 	-- handler:WrapScript(WorldFrame, 'OnMouseUp'  , preReleaseBody, postReleaseBody)

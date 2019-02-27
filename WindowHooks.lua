@@ -1,9 +1,9 @@
-local GL, ADDON_NAME, _ADDON = _G, ...
+local GL, ADDON_NAME, ADDON = _G, ...
 local IA = GL.ImmersiveAction or {}  ;  GL.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 
-assert(_ADDON.WindowList, "Include WindowList.lua before WindowHooks.lua")
-local getSubField = assert(_ADDON.getSubField, "getSubField() missing from WindowList.lua")
+assert(ADDON.WindowList, "Include WindowList.lua before WindowHooks.lua")
+local getSubField = assert(ADDON.getSubField, "getSubField() missing from WindowList.lua")
 local tDeleteItem = GL.tDeleteItem  -- from FrameXML/Util.lua
 local colors = IA.colors
 
@@ -140,10 +140,10 @@ end
 function  IA:HookUpFrames()
 	Log.Init('ImmersiveAction:HookUpFrames()')
 
-	if _ADDON.WindowList and not self.FramesToHook then
-		self.FramesToHook = _ADDON.WindowList
+	if ADDON.WindowList and not self.FramesToHook then
+		self.FramesToHook = ADDON.WindowList
     -- garbagecollect
-		_ADDON.WindowList = nil
+		ADDON.WindowList = nil
 	end
 
 	-- Monitor UIPanelWindows{}:  main bliz windows.

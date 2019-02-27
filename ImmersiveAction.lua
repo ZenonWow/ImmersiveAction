@@ -88,11 +88,12 @@ Debug:
 --]]
 
 
--- _ADDON main: Ace libs, initialization, settings, bindings
-local _G, ADDON_NAME, _ADDON = _G, ...
-local IA = _G.ImmersiveAction or {}
-_G.ImmersiveAction = LibStub("AceAddon-3.0"):NewAddon(IA, "ImmersiveAction", "AceConsole-3.0", "AceEvent-3.0", "AceBucket-3.0")
-if _G.DEVMODE then  _G.IA = _G.IA or IA  end
+-- ADDON main: Ace libs, initialization, settings, bindings
+local GL, ADDON_NAME, ADDON = _G, ...
+local IA = GL.ImmersiveAction or {}
+GL.ImmersiveAction = LibStub("AceAddon-3.0"):NewAddon(IA, "ImmersiveAction", "AceConsole-3.0", "AceEvent-3.0", "AceBucket-3.0")
+-- Export to _G.IA for DEVMODE.
+if GL.DEVMODE then  GL.IA = GL.IA or IA  end
 local Log = IA.Log or {}  ;  IA.Log = Log
 
 -- GLOBALS:
@@ -241,7 +242,7 @@ local function SetBindings(keys, command)
 	for  i,key  in  ipairs(keys)  do
 		SetBinding(key, command)
 	end
-	local name= _G['BINDING_NAME_'.. command]  or  command
+	local name= GL['BINDING_NAME_'.. command]  or  command
 	print('ImmersiveAction updating binding  "'.. name ..'":  '.. table.concat(keys, ', '))
 end
 
@@ -269,7 +270,7 @@ end
 -- Shared functions
 ----------------------
 
-local LibShared = _G.LibShared
+local LibShared = GL.LibShared
 LibShared.SetScript = LibShared.SetScript or {}
 
 --- LibShared.SetScript.OnEvent(frame):  Set a default 'OnEvent' script for the frame.
@@ -296,7 +297,7 @@ LibShared.Define.CreateMacroButton = function(name, macrotext, label)
 	button:SetAttribute('type', 'macro')
 	button:SetAttribute('macrotext', macrotext)
 	button.binding = 'CLICK '..name..':LeftButton'
-	if label then  _G['BINDING_NAME_'..button.binding] = label  end
+	if label then  GL['BINDING_NAME_'..button.binding] = label  end
 	return button
 end
 

@@ -1,6 +1,6 @@
-local _G, ADDON_NAME, _ADDON = _G, ...
+local GL, ADDON_NAME, ADDON = _G, ...
 -- This file lists window names that need visible mousecursor so that the user can interact with them.
--- Exports:  _ADDON.WindowList:  an array (list) of frame names.
+-- Exports:  ADDON.WindowList:  an array (list) of frame names.
 
 
 ------------------------------
@@ -27,17 +27,17 @@ AccountantFrame          ImmersionFrame           BagnonFrameinventory     GwCha
 FlightMapFrame           MovieFrame.CloseDialog   CinematicFrameCloseDialog
 AdiBagsContainer1        AdiBackpack              AdiBank                  ElephantFrame            
 ]===]
--- To get the frame  MovieFrame.CloseDialog  use the function  getSubField(_G, name)
+-- To get the frame  MovieFrame.CloseDialog  use the function  getSubField(GL, name)
 
 
 --- getSubField(root, name)
 -- Get a field of a field (of a field) in root, recursively traveling to any depth in the tree.
--- E.g. getSubField(_G, 'MovieFrame.CloseDialog')  will return _G.MovieFrame.CloseDialog == _G['MovieFrame']['CloseDialog']
+-- E.g. getSubField(GL, 'MovieFrame.CloseDialog')  will return GL.MovieFrame.CloseDialog == GL['MovieFrame']['CloseDialog']
 -- @param root (table) - starting point
 -- @param name (string) - field names to follow, separated by one dot ("."), no whitespace, no square brackets
 -- Just as it is written in Lua code.
 -- Does not support square brackets (eg. MovieFrame["CloseDialog"]), that would require intricate logic, unnecessary in this use-case.
-function _ADDON.getSubField(root, name)
+function ADDON.getSubField(root, name)
 	for i,fieldName in ipairs({ string.split(".", name) }) do
 		if not root then  return nil  end
 		root = root[fieldName]
@@ -120,5 +120,5 @@ WindowListSerialized = nil
 -- Export  WindowList  to addon's private namespace.
 -- WindowList:  an array (list) of frame names.
 ------------------------------
-_ADDON.WindowList = WindowList
+ADDON.WindowList = WindowList
 
