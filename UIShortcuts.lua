@@ -8,24 +8,26 @@ _G.UIShortcuts = UIShortcuts
 
 -- Focus Mouseover
 UIShortcuts.FocusMouseoverButton  = LibShared.Require.CreateMacroButton('FocusMouseoverButton', '/focus mouseover')
-UIShortcuts.FocusMouseoverBinding = 'CLICK FocusMouseoverButton:LeftButton'    -- Name must be the same as in Bindings.xml.
+UIShortcuts.FocusMouseoverBinding = 'CLICK FocusMouseoverButton'    -- Name must be the same as in Bindings.xml.
 _G['BINDING_NAME_'..UIShortcuts.FocusMouseoverBinding] = "Focus Mouseover"
 
 -- Clear Target
 UIShortcuts.ClearTargetButton     = LibShared.Require.CreateMacroButton('ClearTargetButton', '/cleartarget')
-UIShortcuts.ClearTargetBinding    = 'CLICK ClearTargetButton:LeftButton'       -- Name must be the same as in Bindings.xml.
+UIShortcuts.ClearTargetBinding    = 'CLICK ClearTargetButton'       -- Name must be the same as in Bindings.xml.
 _G['BINDING_NAME_'..UIShortcuts.ClearTargetBinding] = "Clear Target"
 
 -- Bindings locales
 
 -- See who's following: Look back while pushed, look forward when released.
 BINDING_NAME_LookBackWhilePushed  = "Look back *while* pushed"
+BINDING_NAME_LookLeft             = "Look left  at 120 degrees"
+BINDING_NAME_LookRight            = "Look right at 120 degrees"
 -- Eject a passenger. One at a time.
 BINDING_NAME_EjectPassenger       = "Eject a passenger"
 -- Open GameMenu without clearing target or closing every frame on screen.
 BINDING_NAME_ToggleGameMenuOnly   = "Toggle Game Menu ONLY"
 -- Open macro editor.
-BINDING_NAME_ToggleMacros         = "Toggle Macros frame"
+BINDING_NAME_ToggleMacroFrame     = "Toggle Macros frame"
 -- Show/hide loot history frame.
 BINDING_NAME_ToggleLootHistory    = "Toggle Loot History (rolls)"
 --[[

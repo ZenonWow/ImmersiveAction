@@ -21,21 +21,36 @@
 	<ModifiedClick action="Interact" default="CTRL" /> 
 
 
-	<Binding name="CLICK ClearTargetButton:LeftButton" header="UIShortcuts" >
+	<Binding name="CLICK ClearTargetButton" header="UIShortcuts" >
 		-- Name must be the same as in ImmersiveAction.lua
 		-- description="Unselect Target"
 		-- CLICKs the ClearTargetButton without any code here.
 	</Binding>
 	
-	<Binding name="CLICK FocusMouseoverButton:LeftButton" >
+	<Binding name="CLICK FocusMouseoverButton" >
 		-- description="Focus Mouseover"
 		-- CLICKs the FocusMouseoverButton without any code here.
 	</Binding>
 	
+	
 	<Binding name="LookBackWhilePushed" runOnUp="true" >
-		-- description="See who's following: Look back while pushed, look forward when released."
+		-- description="See who's following: Look back while pushed, now with camera movement."
 		FlipCameraYaw(180)
+		ImmersiveAction:TurnWithoutInteract(keystate == 'down')
 	</Binding>
+	
+	<Binding name="LookLeft" runOnUp="true" >
+		-- description="Look left, slightly back at 120 degrees."
+		FlipCameraYaw(keystate=='down' and 240 or 120)
+		ImmersiveAction:TurnWithoutInteract(keystate == 'down')
+	</Binding>
+	
+	<Binding name="LookRight" runOnUp="true" >
+		-- description="Look right, slightly back at 120 degrees."
+		FlipCameraYaw(keystate=='down' and 120 or 240)
+		ImmersiveAction:TurnWithoutInteract(keystate == 'down')
+	</Binding>
+	
 	
 	<Binding name="EjectPassenger" >
 		-- description="Eject a passenger. One at a time."
@@ -53,7 +68,7 @@
 		UIShortcuts.ToggleMacroFrame()
 	</Binding>
 	
-	<Binding name="ToggleLootHistoryFrame" >
+	<Binding name="ToggleLootHistory" >
 		-- description="Show/hide loot history frame."
 		ToggleLootHistoryFrame()
 	</Binding>
