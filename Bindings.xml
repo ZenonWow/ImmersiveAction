@@ -1,6 +1,6 @@
 <Bindings>
 
-	<Binding name="INTERACTNEAREST" header="ImmersiveAction_" >
+	<Binding name="INTERACTNEAREST" header="ImmersiveAction" >
 		-- description="Target and interact with closest friendly npc"
 		-- Rebound dynamically to either INTERACTTARGET or TARGETNEARESTFRIEND.
 		print("INTERACTNEAREST is disabled:  range checking is not working.")
@@ -11,16 +11,35 @@
 		ImmersiveAction:ToggleActionMode()
 	</Binding>
 
-	<Binding name="TurnOrActionHijack" runOnUp="true" hidden="true" >
-		-- Turn without Interacting. Used when we don't want to the RightButton to Interact upon release.
-		ImmersiveAction:TurnOrActionHijack(keystate == 'down')
-	</Binding>
-
 	<!-- <ModifiedClick action="ActionModeEnable" default="SHIFT" /> -->
 	<!-- <ModifiedClick action="ActionModeDisable" default="ALT" />  -->
 	<ModifiedClick action="Interact" default="CTRL" /> 
 
 
+	<Binding name="TurnWithoutInteract" runOnUp="true" >
+		-- Turn without Interacting. Used when we don't want the RightButton to Interact upon release.
+		ImmersiveAction:TurnWithoutInteract(keystate == 'down')
+	</Binding>
+
+	<Binding name="LookBackWhilePushed" runOnUp="true" >
+		-- description="See who's following: Look back while pushed, now with camera movement."
+		FlipCameraYaw(180)
+		ImmersiveAction:TurnWithoutInteract(keystate == 'down')
+	</Binding>
+	
+	<Binding name="LookLeft" runOnUp="true" >
+		-- description="Look left at 90 degrees."
+		FlipCameraYaw(keystate=='down' and 90 or -90)
+		ImmersiveAction:TurnWithoutInteract(keystate == 'down')
+	</Binding>
+	
+	<Binding name="LookRight" runOnUp="true" >
+		-- description="Look right at 90 degrees."
+		FlipCameraYaw(keystate=='down' and -90 or 90)
+		ImmersiveAction:TurnWithoutInteract(keystate == 'down')
+	</Binding>
+	
+	
 	<Binding name="CLICK ClearTargetButton" header="UIShortcuts" >
 		-- Name must be the same as in ImmersiveAction.lua
 		-- description="Unselect Target"
@@ -33,29 +52,11 @@
 	</Binding>
 	
 	
-	<Binding name="LookBackWhilePushed" runOnUp="true" >
-		-- description="See who's following: Look back while pushed, now with camera movement."
-		FlipCameraYaw(180)
-		ImmersiveAction:TurnWithoutInteract(keystate == 'down')
-	</Binding>
-	
-	<Binding name="LookLeft" runOnUp="true" >
-		-- description="Look left, slightly back at 120 degrees."
-		FlipCameraYaw(keystate=='down' and 240 or 120)
-		ImmersiveAction:TurnWithoutInteract(keystate == 'down')
-	</Binding>
-	
-	<Binding name="LookRight" runOnUp="true" >
-		-- description="Look right, slightly back at 120 degrees."
-		FlipCameraYaw(keystate=='down' and 120 or 240)
-		ImmersiveAction:TurnWithoutInteract(keystate == 'down')
-	</Binding>
-	
-	
 	<Binding name="EjectPassenger" >
 		-- description="Eject a passenger. One at a time."
 		UIShortcuts.EjectPassenger()
 	</Binding>
+	
 	
 	<Binding name="ToggleGameMenuOnly" >
 		-- description="Open GameMenu without clearing target or closing every frame on screen."

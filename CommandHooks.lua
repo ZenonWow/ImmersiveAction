@@ -13,7 +13,7 @@ local Log = IA.Log or {}  ;  IA.Log = Log
 BINDING_HEADER_ImmersiveAction  = "Immersive Action"
 
 -- Custom commands
-BINDING_NAME_INTERACTNEAREST    = "Target and interact with closest friendly npc"
+BINDING_NAME_INTERACTNEAREST    = "Target and interact closest friendly npc"
 BINDING_NAME_ToggleActionMode   = "Toggle Action mode"
 BINDING_NAME_TurnOrActionHijack = "Turn without Interacting"
 

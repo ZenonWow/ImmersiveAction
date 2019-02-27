@@ -92,6 +92,7 @@ Debug:
 local _G, ADDON_NAME, _ADDON = _G, ...
 local IA = _G.ImmersiveAction or {}
 _G.ImmersiveAction = LibStub("AceAddon-3.0"):NewAddon(IA, "ImmersiveAction", "AceConsole-3.0", "AceEvent-3.0", "AceBucket-3.0")
+if _G.DEVMODE then  _G.IA = _G.IA or IA  end
 local Log = IA.Log or {}  ;  IA.Log = Log
 
 -- GLOBALS:
@@ -296,6 +297,7 @@ LibShared.Define.CreateMacroButton = function(name, macrotext, label)
 	button:SetAttribute('macrotext', macrotext)
 	button.binding = 'CLICK '..name..':LeftButton'
 	if label then  _G['BINDING_NAME_'..button.binding] = label  end
+	return button
 end
 
 
