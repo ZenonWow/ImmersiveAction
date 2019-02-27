@@ -343,10 +343,7 @@ local MapButtonToKey = LibShared.MapButtonToKey
 /dump ImmersiveAction.WorldClickHandler.FixAccidentalRightClick
 /dump UIParent:GetScript('OnMouseUp') == ImmersiveAction.WorldClickHandler.FixAccidentalRightClick
 /dump GetModifiedClick('Interact')
-/dump GetModifiedClick('INTERACT')
-/dump SetModifiedClick('INTERACT','CTRL')
-/dump SetModifiedClick('Interact','CTRL')
-/run SetModifiedClick('Interact','CTRL')
+/dump IsModifiedClick('Interact')
 --]]
 -------------------------------
 local WorldClickHandler = CreateFrame('Frame', nil, nil, 'SecureHandlerMouseUpDownTemplate')
@@ -365,23 +362,35 @@ WorldClickHandler.original = { [WorldFrame] = {}, [UIParent] = {} }
 WorldClickHandler.hooked = { [WorldFrame] = {}, [UIParent] = {} }
 
 
+function WorldClickHandler.UIOnMouseDown(frame, button)
+	print("UIParent", IA.coloredKey(button, true))
+end
+
+function WorldClickHandler.UIOnMouseUp(frame, button)
+	print("UIParent", IA.coloredKey(button, false))
+end
+
 function WorldClickHandler.OnMouseDown(frame, button)
 	local self = WorldClickHandler
 	-- If the OnMouseUp hook runs before TurnOrActionStop(),
 	-- then similarly OnMouseDown runs before TurnOrActionStart(), right?  (before hiding the mouseover)
 	self.wasMouseover = UnitExists('mouseover')
-	-- self.wasMouseover = self.isMouseover
+	-- self.wasMouseover = self.lastMouseoverEvent
 	-- self.wasMouseover =  GetTime() - self.LastMouseoverTime < 0.3  -- Lost mouseover just before?
-	print("    WorldFrame:OnMouseDown", frame, button, "IsMouselooking=", IsMouselooking(), "isMouseover=", self.isMouseover, "wasMouseover=", wasMouseover, "<-- Hope this is trueish.")
+	print()
+	self.counter = (self.counter or 0) + 1
+	print("", self.counter, IA.coloredKey(button, true))
+
+	if self.prevClickToMove then  SetCVar("AutoInteract", self.prevClickToMove) ; self.prevClickToMove = nil  end
 end
 
 
 function WorldClickHandler.OnMouseUp(frame, button)
-	print("    WorldFrame:OnMouseUp", frame, button)
+	print("", self.counter, IA.coloredKey(button, false) )
 	local self = WorldClickHandler
-	-- local key = MapButtonToKey[button]
-	-- if  key == self.BUTTONs.Turn  and  UnitExists('mouseover')  and  not IsModifiedClick('Interact')  then
-	if button == 'RightButton' then
+	local key = MapButtonToKey[button]
+	if  key == self.BUTTONs.Turn  then
+	-- if button == 'RightButton' then
 		WorldClickHandler.FixRightClick(frame, button)
 	end
 end
@@ -405,9 +414,12 @@ function WorldClickHandler.FixRightClick(frame, button)
 end
 
 
+WorldClickHandler.PreventAllSingleClicks = false
+WorldClickHandler.RunToDoubleClickGround = true
+WorldClickHandler.RunToDoubleClickMouseover = true
+
 function WorldClickHandler:FixAccidentalRightClick(frame, button)
 	if IA.FixB2 == false then  return  end
-	if not self.wasMouseover then  return  end
 	if not IsMouselooking() then  return  end
 	if IsModifiedClick('Interact') then  return  end
 
@@ -417,11 +429,21 @@ function WorldClickHandler:FixAccidentalRightClick(frame, button)
 
 	-- local mouseover = UnitExists('mouseover')  --  Always nil: mouseover is hidden when IsMouselooking()
 
-	if DoubleClickInterval < now-last then
-		print("IA.FixB2: MouselookStop()")
-		IA.MouselookStop()    -- Trick TurnOrActionStop() into believing it was not pressed.
+	if self.prevClickToMove then  SetCVar("AutoInteract", self.prevClickToMove) ; self.prevClickToMove = nil  end
+
+	if  now-last > DoubleClickInterval then
+		-- NOT DoubleClick
+		if self.wasMouseover or self.PreventAllSingleClicks then
+			print("IA.FixB2: MouselookStop()")
+			IA.MouselookStop()    -- Trick TurnOrActionStop() into believing it was not pressed.
+		end
+  elseif  self.RunToDoubleClickMouseover  and  self.wasMouseover
+	or  self.RunToDoubleClickGround  and  not self.wasMouseover
+  then  --  and not InCombatLockdown() then
+		print("IA.FixB2: RunToDoubleClick")
+		local prevClickToMove= GetCVar("AutoInteract")    --  Adequately named cvar.
+		if  prevClickToMove ~= 1  then  SetCVar("AutoInteract", 1) ; self.prevClickToMove = prevClickToMove  end
 	else
-		-- IA.MouselookStart()    -- Allow Interact.
 		print("IA.FixB2: Interact")
 	end
 end
@@ -429,12 +451,12 @@ end
 
 function WorldClickHandler:UPDATE_MOUSEOVER_UNIT(event, ...)
 	local mouseover = UnitExists('mouseover')
-	if  mouseover  or  self.isMouseover  then
+	if  mouseover  or  self.lastMouseoverEvent  then
 		-- Hovering over mouseover unit,  or just lost the mouseover before this event.
 		self.LastMouseoverTime = GetTime()
 	end
 	
-	self.isMouseover = mouseover
+	self.lastMouseoverEvent = mouseover
 end
 
 
@@ -450,7 +472,7 @@ end
 ---------- CameraOrSelectOrMoveStop(IsModifiedClick("STICKYCAMERA"));
 
 
--- Secure wrapper function WorldFrame_OnMouseDown_PreSnippet(self, button, down)
+-- Secure wrapper function WorldFrame_OnMouseDown_PreSnippet(self, button)
 -- If CameraButton (LeftButton) is pressed then rebinds TurnBUTTON (BUTTON2) to AUTORUN.
 -- In the secure environment:  owner == WorldClickHandler, self == WorldFrame  and  control == owner, i guess, but no code or documentation confirms.
 local WorldFrame_OnMouseDown_PreSnippet = [===[
@@ -494,7 +516,7 @@ end
 -- Verdict:  MouselookStop() is more compatible with hooking TurnOrActionStop().
 -- This implementation uses the MouselookStop() method. Will work, until bliz fixes the design flaw of TurnOrActionStop(), present since 2004.
 --
--- Secure wrapper function WorldFrame_OnMouseUp_PreSnippet(self, button, down)
+-- Secure wrapper function WorldFrame_OnMouseUp_PreSnippet(self, button)
 local WorldFrame_OnMouseUp_PreSnippet = [===[
 	print(" WorldFrame_OnMouseUp_PreSnippet("..button..") ")
 	local key = MapButtonToKey[button]
@@ -525,7 +547,7 @@ local WorldFrame_OnMouseUp_PreSnippet = [===[
 -- Spamming clicks still works, but a single click is prevented from an accidental pull or targeting.
 
 
--- Secure wrapper function WorldFrame_OnMouseUp_PostSnippet(self, button, down)
+-- Secure wrapper function WorldFrame_OnMouseUp_PostSnippet(self, button)
 local WorldFrame_OnMouseUp_PostSnippet = [===[
 	print(" WorldFrame_OnMouseUp_PostSnippet("..button..") ")
 
@@ -534,6 +556,20 @@ local WorldFrame_OnMouseUp_PostSnippet = [===[
 		Rebound[key] = nil
 		owner:ClearBinding(key)
 	end
+]===]
+
+
+
+-- Secure wrapper function UIParent_OnClick_PreSnippet(self, button, down)
+local UIParent_OnClick_PreSnippet = [===[
+	print(" UIParent_OnClick_PreSnippet("..button..", down="..tostring(down)..") ")
+]===]
+
+
+
+-- Secure wrapper function UIParent_OnClick_PostSnippet(self, button, down)
+local UIParent_OnClick_PostSnippet = [===[
+	print(" UIParent_OnClick_PostSnippet("..button..", down="..tostring(down)..") ")
 ]===]
 
 
@@ -574,13 +610,19 @@ function WorldClickHandler:InitSecureHandler()
 	if not self.hooked[WorldFrame].OnMouseUp then
 		self.original[WorldFrame].OnMouseDown = WorldFrame:GetScript('OnMouseDown')
 		self.original[WorldFrame].OnMouseUp   = WorldFrame:GetScript('OnMouseUp')
+		self.original[UIParent].OnMouseDown = UIParent:GetScript('OnMouseDown')
+		self.original[UIParent].OnMouseUp   = UIParent:GetScript('OnMouseUp')
 		WorldFrame:HookScript('OnMouseDown', self.OnMouseDown)
 		WorldFrame:HookScript('OnMouseUp', self.OnMouseUp)
+		UIParent:HookScript('OnMouseDown', self.OnMouseDown)
+		UIParent:HookScript('OnMouseUp', self.OnMouseUp)
 		self.hooked[WorldFrame].OnMouseDown = WorldFrame:GetScript('OnMouseDown')
 		self.hooked[WorldFrame].OnMouseUp   = WorldFrame:GetScript('OnMouseUp')
+		self.hooked[UIParent].OnMouseDown = UIParent:GetScript('OnMouseDown')
+		self.hooked[UIParent].OnMouseUp   = UIParent:GetScript('OnMouseUp')
 	end
 
-	SecureHandlerWrapScript(UIParent, 'OnClick', handler, UIParent_OnClick_PreSnippet, UIParent_OnClick_PostSnippet)
+	-- SecureHandlerWrapScript(UIParent, 'OnClick', handler, UIParent_OnClick_PreSnippet, UIParent_OnClick_PostSnippet)
 	
 	handler:UpdateDoubleClickInterval()
 	handler:UpdateOverrideBindings()
@@ -590,12 +632,16 @@ end
 function WorldClickHandler:DisableHandler()
 	-- self:UnwrapScript(WorldFrame, 'OnMouseDown')
 	-- self:UnwrapScript(WorldFrame, 'OnMouseUp')
-	self:UnwrapScript(UIParent, 'OnClick')
+	-- self:UnwrapScript(UIParent, 'OnClick')
 
 	if self.hooked[WorldFrame].OnMouseDown == WorldFrame:GetScript('OnMouseDown')
 	then  WorldFrame:SetScript('OnMouseDown', self.original[WorldFrame].OnMouseDown)  end
 	if self.hooked[WorldFrame].OnMouseUp == WorldFrame:GetScript('OnMouseUp')
 	then  WorldFrame:SetScript('OnMouseUp', self.original[WorldFrame].OnMouseUp)  end
+	if self.hooked[UIParent].OnMouseDown == UIParent:GetScript('OnMouseDown')
+	then  UIParent:SetScript('OnMouseDown', self.original[UIParent].OnMouseDown)  end
+	if self.hooked[UIParent].OnMouseUp == UIParent:GetScript('OnMouseUp')
+	then  UIParent:SetScript('OnMouseUp', self.original[UIParent].OnMouseUp)  end
 end
 
 

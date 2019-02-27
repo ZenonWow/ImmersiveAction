@@ -81,6 +81,8 @@ end
 /run ImmersiveAction.colors['nil']= ImmersiveAction.colors.blue
 /run ImmersiveAction.colors[false]= ImmersiveAction.colors.blue
 /run ImmersiveAction.colors[true]= ImmersiveAction.colors.green
+
+/run ImmersiveAction.colors.up = ImmersiveAction.colors.gray
 --]]
 local colors = {
 		black			= "|cFF000000",
@@ -102,14 +104,14 @@ local colors = {
 		restore		= "|r",
 }
 IA.colors = colors
-colors['nil']			= colors.lightblue
-colors[false]			= colors.lightblue
-colors.up					= colors.lightblue
-colors[true]			= colors.green
-colors.down				= colors.green		--colors.purple
+colors['nil']			= colors.gray
+colors[false]			= colors.gray
+colors.up					= colors.gray
+colors[true]			= colors.lightblue
+colors.down				= colors.lightblue		--colors.purple
 colors.missedup		= colors.orange
-colors.show				= colors.green
-colors.hide				= colors.lightblue
+colors.show				= colors.lightblue
+colors.hide				= colors.blue
 colors.event			= colors.lightgreen
 colors.ActionMode = colors.orange
 colors.AutoRun    = colors.orange
