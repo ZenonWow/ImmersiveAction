@@ -58,40 +58,39 @@ The purpose of this is to allow left click to be used for multiple purposes whil
 -- SecureHandlerStateTemplate for a minimal in-combat functionality
 ---------------------------------
 
---- InCombatSnippet(self, stateid, newstate)
 -- Set all keys to a best-effort guess by the StateHandler.
 --
--- if PlayerInCombat() then  return  end    -- Done with 'ignore' now.
-local InCombatSnippet = [===[
+-- globals:  lastBinding, TargetCommand, DynamicKeys
+--- OverrideBindingInCombat(self, stateid, newstate)
+InCombatHandler.OverrideBindingInCombat = [===[
 	if newstate=='ignore' then  return  end
-	local InteractBinding = self:GetAttribute('InteractBinding')
-	if newstate == InteractBinding
-	then  print("InCombatSnippet():  newstate == InteractBinding ==", newstate)
-	else  print("InCombatSnippet():  InteractBinding was=", InteractBinding, "newstate=", newstate)
+	-- if not PlayerInCombat() then  return  end    -- Done with 'ignore' now.
+
+	if newstate == lastBinding
+	then  print("OverrideBindingInCombat():  newstate == lastBinding ==", newstate)
+	else  print("OverrideBindingInCombat():  lastBinding was=", lastBinding, "newstate=", newstate)
   end
-	self:SetAttribute('InteractBinding', newstate)
-]===]
+	lastBinding = newstate
+	local command =  newstate~=''  and  newstate  or  nil
 
---- OverrideBindingsSnippet(self, name, value)
--- Set all keys to the new InteractBinding.
---
-local OverrideBindingsSnippet = [===[
-	if lastInteractBinding == value
-	then  print("OverrideBindingsSnippet(): value == lastInteractBinding ==", value)
-	else  print("OverrideBindingsSnippet(): lastInteractBinding=", lastInteractBinding, "new=", value)
-  end
-	lastInteractBinding = value
-	if value=='' then  value = nil  end
-
-	local TargetCommand = TargetCommand
-	-- local TargetCommand = self:GetAttribute('TargetCommand')
-
-	for key,interactCmd in pairs(DynamicKeys) do
-		interactCmd =  value  and  interactCmd
-		if interactCmd==true then  interactCmd = value or TargetCommand  end
-		self:SetBinding(key, interactCmd)
+	for key,original in pairs(DynamicKeys) do
+		self:SetBinding(true, key, command)    -- true: priority over UserBindings (where user selected INTERACTNEAREST)
 	end
 ]===]
+
+
+local rtablepairs = _G.rtable.pairs
+
+-- Pair of OverrideBindingInCombat in insecure (out-of-combat) context.
+function InCombatHandler:OverrideBindingOutOfCombat(command)
+	local DynamicKeys = self.Env.DynamicKeys
+
+	-- Iterate the same, restricted table as the secure version. Reading is allowed.
+	for key,original in rtablepairs(DynamicKeys) do
+		self:SetBinding(true, key, command)    -- true: priority over UserBindings (where user selected INTERACTNEAREST)
+	end
+end
+
 
 
 
@@ -117,8 +116,6 @@ In combat:
 
 
 function InCombatHandler:InitSecureHandler()
-	local handler = self    -- For clarity.
-
 	 -- The StateDriver decides in combat what binding command to use.
 	 -- Checking distance is prohibited intentionally in secure context.
 	--[[
@@ -138,17 +135,16 @@ function InCombatHandler:InitSecureHandler()
 	-- will interact with any targeted unit, attacking if its enemy.
 	-- In the heat of the battle this will seldom be noticed.
 
+	local handler = self    -- For clarity.
 	-- _G.SecureStateDriverManager:RegisterEvent("UPDATE_MOUSEOVER_UNIT")  -- necessary?
-	_G.RegisterStateDriver(handler, 'InteractBinding', NoCombatCondition .. MouseOverCondition .. TargetCondition)
+	_G.RegisterStateDriver(handler, 'INTERACTNEAREST', NoCombatCondition .. MouseOverCondition .. TargetCondition)
 
-	handler:SetAttribute('_onstate-'..'InteractBinding', InCombatSnippet)
-	InCombatSnippet = nil
-	handler:SetAttribute('_onattribute-'..'InteractBinding', OverrideBindingsSnippet)
-	OverrideBindingsSnippet = nil
-	-- handler:SetAttribute('_onattribute-'..'DynamicKeys', UpdateKeysSnippet)
-	-- handler:SetAttribute('_onattribute-'..'TargetCommand', UpdateKeysSnippet)
+	handler:SetAttribute('_onstate-'..'INTERACTNEAREST', self.OverrideBindingInCombat)
+	self.OverrideBindingInCombat = nil
+	-- handler:SetAttribute('_onattributechanged', self.AttributeChangedSnippet)
+	-- self.AttributeChangedSnippet = nil
 	
-	-- Createthe "globals" available to the snippets in the protected environment.
+	-- Create the "globals" available to the snippets in the protected environment.
 	-- DynamicKeys (key->toCmd) restricted table:
 	handler:Execute(" DynamicKeys = newtable() ")
 	handler.Env = _G.GetManagedEnvironment(handler)
@@ -166,6 +162,8 @@ end
 function InteractNearest:SetTargetCommand(TargetCommand)
 	self.TargetCommand = TargetCommand
 	if InCombatLockdown() then  return  end
+
+	local handler = self    -- For clarity.
 	-- handler.Env.TargetCommand = self.TargetCommand
 	-- handler:RunAttribute('_setTargetCommand', self.TargetCommand)
 	-- handler:RunSnippet('_setTargetCommand', self.TargetCommand)
@@ -184,16 +182,12 @@ function InCombatHandler:UploadKeys(insecureKeys)
 
 	print("InCombatHandler:UploadKeys()")
 	handler:Execute(" wipe(DynamicKeys) ")
-	for key,toCmd in pairs(insecureKeys) do
-		-- handler:RunAttribute('_addKey', key, toCmd)
-		-- handler:RunSnippet('_addKey', key, toCmd)
+	for key,fromCmd in pairs(insecureKeys) do
+		-- handler:RunAttribute('_addKey', key, fromCmd)
+		-- handler:RunSnippet('_addKey', key, fromCmd)
 		-- RunSnippet() is not found on Earth, or in any code. Only "Iriel’s Field Guide to Secure Handlers" mentions it, but not how to set the snippets.
-		-- handler:Execute(" local key,toCmd=... ; DynamicKeys[key] = toCmd ", key, toCmd)
-		if toCmd==true
-		then  handler:Execute(" DynamicKeys['"..key.."'] = true ")
-		else  handler:Execute(" DynamicKeys['"..key.."'] = '"..toCmd.."' ")
-		end
-		-- handler:Execute(" DynamicKeys."..key.." = '"..toCmd.."' ")
+		-- handler:Execute(" local key,fromCmd=... ; DynamicKeys[key] = fromCmd ", key, fromCmd)
+		handler:Execute(" DynamicKeys['"..key.."'] = '"..fromCmd.."' ")
 	end
 end
 
@@ -281,7 +275,7 @@ end
 ---------------------------------
 
 function InteractNearest:Activate()
-	local active =  self.enabled  and  nil~=next(self.keyOverrides)
+	local active =  self.enabled  and  nil~=next(self.DynamicKeys)
 	if  not self.active == not active  then  return nil  end
 	self.active = active
 	IA.commandState.InteractNearest = active
@@ -300,14 +294,13 @@ end
 
 
 -- InteractNearest:CaptureBindings() is a bit different from OverrideBindings:CaptureBindings()
--- as it stores  key -> toCmd  in keyOverrides, more suitable for the InCombatHandler.
+-- as it stores  key -> toCmd  in DynamicKeys, more suitable for the InCombatHandler.
 function InteractNearest:UpdateOverrideBindings()
-	local keyOverrides = self.CaptureBindings(self.Overrides)
-	self.keyOverrides = keyOverrides
+	self.DynamicKeys = self.CaptureBindings(self.Overrides)
 
 	local handler = self.InCombatHandler
 	if handler.InitSecureHandler then  handler:InitSecureHandler()  end
-	handler:UploadKeys(keyOverrides)
+	handler:UploadKeys(self.DynamicKeys)
 
 	self:Activate()
 end
@@ -322,15 +315,15 @@ end
 
 
 function InteractNearest.CaptureBindings(overrides)
-	local keyOverrides = {}
-	for fromCmd,toCmd in pairs(overrides) do
+	local DynamicKeys = {}
+	for fromCmd,macroCondition in pairs(overrides) do
 		local keys = { GetBindingKey(fromCmd) }
 		for i,key in ipairs(keys) do
-			LibShared.softassert(not keyOverrides[key], "")
-			keyOverrides[key] = toCmd
+			LibShared.softassert(not DynamicKeys[key], "")
+			DynamicKeys[key] = fromCmd
 		end
 	end
-	return keyOverrides
+	return DynamicKeys
 end
 
 
@@ -379,9 +372,10 @@ function InteractNearest:StartTackingUnit(unit)
 	print("InteractNearest:StartTackingUnit(..) -> new trackedUnit = "..tostring(unit))
 	self.trackedUnit = unit
 	self.InteractCommand = unit == 'mouseover' and 'INTERACTMOUSEOVER' or 'INTERACTTARGET'
+
 	-- Enable OnUpdate monitor if there is a tracked unit.
 	self:SetShown(unit ~= nil)
-	self:OverrideBindings()
+	self:UpdateInteractBinding()
 	return unit
 end
 
@@ -390,21 +384,23 @@ end
 -- Periodically check distance of tracked unit
 ---------------------------------
 
-function InteractNearest:OverrideBindings()
+function InteractNearest:UpdateInteractBinding()
 	local unit = self.trackedUnit
 	local interact =  unit  and  CheckInteractDistance(unit, self.InteractRange)
-	local interactCmd =
+	local command =
   interact  and  self.InteractCommand
 		or  self.TargetLastHostile
 		or  self.TargetCommand	
 
-	if  interactCmd == self.currentBinding  then  return  end		-- no changes
-	self.currentBinding = interactCmd
+	if  command == self.currentBinding  then  return  end		-- no changes
+	self.currentBinding = command
 
 	-- Override the bindings with the new command.
 	-- This cannot be called InCombatLockdown().
-	self.InCombatHandler:SetAttribute('InteractBinding', interactCmd)
+	-- Do with the handler.
+	-- self.InCombatHandler:SetAttribute('INTERACTNEAREST', command)
+	-- Do it directly.
+	self:OverrideBindingOutOfCombat(command)
 end
-
 
 
