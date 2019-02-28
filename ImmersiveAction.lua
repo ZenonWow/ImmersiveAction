@@ -110,8 +110,8 @@ local Log = IA.Log or {}  ;  IA.Log = Log
 --------------------------
 
 -- Initial state:
--- IA.commandState.ActionMode = nil
--- IA.commandState.ActionModeRecent = nil
+-- IA.activeCommands.ActionMode = nil
+-- IA.activeCommands.ActionModeRecent = nil
 
 
 function IA:OnInitialize()
@@ -137,7 +137,7 @@ function IA:OnInitialize()
 	self.db.RegisterCallback(self, "OnProfileReset", "ProfileChanged")
 	--self.db.RegisterCallback(self, "OnDatabaseShutdown", "OnDisable")
 	
-	self.commandState.ActionMode = self.db.profile.enabledOnLogin
+	self.activeCommands.ActionMode = self.db.profile.enabledOnLogin
 	self:ProfileChanged()
 end	
 
@@ -172,8 +172,8 @@ function IA:OnDisable()
 	Log.Init('  ImmersiveAction:OnDisable()')
 	-- Called when the addon is disabled
 
-	self.commandState.ActionMode = false
-	self.commandState.ActionModeRecent = nil
+	self.activeCommands.ActionMode = false
+	self.activeCommands.ActionModeRecent = nil
 
 	self:UnregisterEvent('ADDON_LOADED')
 

@@ -132,7 +132,7 @@ function UserBindings:UpdateUserBindings()
 
 	ClearOverrideBindings(UserBindings)
 	self:OverrideUserBindings('General', true)
-	self:OverrideUserBindings('ActionMode', IA.commandState.ActionMode)
+	self:OverrideUserBindings('ActionMode', IA.activeCommands.ActionMode)
 
 	-- Modifiers (SHIFT/CTRL/ALT) to turn on/off ActionMode.
 	-- Currently the ModifiedClick is not used, only the profile.modifiers.* setting.
@@ -233,7 +233,7 @@ end
 ------------------------------
 
 function OverrideBindings:OverrideCommandsIn(mode, enable)
-	self:OverrideCommands(OverridesIn[mode], enable and IA.commandState[mode])
+	self:OverrideCommands(OverridesIn[mode], enable and IA.activeCommands[mode])
 end
 
 
@@ -259,7 +259,7 @@ function OverrideBindings:PLAYER_REGEN_DISABLED(event)
 	self:UpdateOverrides(false)
 end
 
--- Enable OverrideBindings after combat, depending on IA.commandState[mode].
+-- Enable OverrideBindings after combat, depending on IA.activeCommands[mode].
 function OverrideBindings:PLAYER_REGEN_ENABLED(event)
 	-- self:OverrideCommandsIn('AutoRun')
 	-- self:OverrideCommandsIn('ActionMode')
@@ -270,7 +270,7 @@ function OverrideBindings:Enable(enable)
 	if  not self.enable == not enable  then  return nil  end
 	self.enable = enable
 
-	-- IA.commandState.OverrideBindings = enable
+	-- IA.activeCommands.OverrideBindings = enable
 	if enable then
 		self:RegisterEvent('PLAYER_REGEN_DISABLED')
 		self:RegisterEvent('PLAYER_REGEN_ENABLED')
@@ -280,7 +280,7 @@ function OverrideBindings:Enable(enable)
 		self:UnregisterEvent('PLAYER_REGEN_ENABLED')
 		self:PLAYER_REGEN_DISABLED('Enable(false)')
 	end
-	IA.commandState.General = enable
+	IA.activeCommands.General = enable
 	self:OverrideCommandsIn('General', enable)
 	return true
 end
@@ -432,7 +432,7 @@ end
 
 
 function WorldClickHandler.FixRightClick(frame, button)
-	if IA.commandState.ActionMode then
+	if IA.activeCommands.ActionMode then
 		-- In ActionMode pressing TurnOrAction (RightButton) will show the cursor, and when released
 		-- it will Interact with anything under the cursor. This needs some trickery, perhaps:
 		-- Enable Mouselook early, _before_ the button release is processed, so it counts as a RightButton released after Mouselooking,

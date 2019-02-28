@@ -1,4 +1,4 @@
--- Methods for event handling, commandState update of IA, Mouselook, SmartTargeting
+-- Methods for event handling, activeCommands update of IA, Mouselook, SmartTargeting
 local G, ADDON_NAME, ADDON = _G, ...
 local IA = G.ImmersiveAction or {}  ;  G.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
@@ -8,7 +8,7 @@ local colors = IA.colors
 --[[ Analyzing key press state:
 -- commands can get stuck in pressed state if the binding is changed and the "up" event goes to a different command
 /dump ImmersiveAction.db.profile.enabledOnLogin
-/dump ImmersiveAction.commandState, ImmersiveAction.commandGroups
+/dump ImmersiveAction.activeCommands, ImmersiveAction.commandGroups
 /run ImmersiveAction:ResetState()
 -- Cause of ImmersiveAction:
 /dump ImmersiveAction.db.profile.enableWithMoveKeys
@@ -31,11 +31,11 @@ local colors = IA.colors
 
 
 ------------------------------
---- IA.commandState is the key/binding/command pressed state map (action->pressed).
+--- IA.activeCommands is the key/binding/command pressed state map (action->pressed).
 -- This is the input to IA:ExpectedMouselook().
 -- IA:ProcessCommand() keeps this updated with UI actions/events.
 --
-IA.commandState = {}
+IA.activeCommands = {}
 
 -- commandGroups:  `nil` is 'not pressed'
 IA.commandGroups = {
@@ -94,7 +94,7 @@ local DisablesAutoRun = {
 ------------------
 
 function IA:SetActionMode(enable)
-	local cstate = self.commandState
+	local cstate = self.activeCommands
 	if cstate.ActionModeRecent == enable then  return  end
 	cstate.ActionModeRecent = enable
 	cstate.ActionMode = enable
@@ -108,7 +108,7 @@ function  IA:ResetState()
 	Log.State(colors.red .. 'RESETing|r keypress state')
 	
 	-- A command might be stuck in pressed state, reset state to free mouse
-	local cstate = self.commandState
+	local cstate = self.activeCommands
 	for  cmdName,pressed  in  pairs(cstate)  do  if  pressed  then
 		Log.State('  '.. colors.red .. cmdName ..'|r was PRESSED, is reset now')
 		-- cstate[cmdName] = nil
@@ -133,7 +133,7 @@ end
 -------------------------------------
 
 function IA:ProcessCommand(cmdName, pressed)
-	local cstate = self.commandState
+	local cstate = self.activeCommands
 
 	-- if cmdName == 'MoveForward' and GetMouseButtonClicked() then
 	if cmdName == 'MoveForward' then
@@ -167,7 +167,7 @@ end
 ------------------------------
 --
 function IA:CheckStuckState(cmdName, pressed)
-	local cstate = self.commandState
+	local cstate = self.activeCommands
 	-- Do not accept multiple keys bound to the same command to be pressed at the same time.
 	-- That results in multiple calls with same cmdName, pressed. Press 2 buttons, release 1,
 	-- and the client thinks both are released.
@@ -195,9 +195,9 @@ end
 -- Check if the game disables AutoRun. By check i mean make an educated guess. Cheers for the api disaigners.
 --
 function IA:CheckAutoRun(cmdName, pressed)
-	local cstate = self.commandState
+	local cstate = self.activeCommands
 	-- Quite a few click/binding combos disable AutoRun. Try to detect *all* such combinations.
-	-- Ex. AutoRun + B1 + B2 -> AutoRun stops, commandState.AutoRun is stuck opposite of the real.
+	-- Ex. AutoRun + B1 + B2 -> AutoRun stops, activeCommands.AutoRun is stuck opposite of the real.
 	-- AutoRun + MoveAndSteer (out-of-combat remapped to TurnWithoutAction)
 	-- Checking GetUnitSpeed() is still there to catch any unforeseen corner cases.
 	-- Credits for the idea:  https://wow.curseforge.com/projects/mouselookhandler/pages/mouselook-while-moving-including-autorun
@@ -207,7 +207,7 @@ function IA:CheckAutoRun(cmdName, pressed)
 	then  self:SetCommandState('AutoRun', false)
 	elseif 0 == GetUnitSpeed('player') then
 		self:SetCommandState('AutoRun', false)
-		Log.Anomaly("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed).."):  Disabled commandState."..colors.AutoRun.."AutoRun|r, state would have been inverted, and MoveAndSteer rebinding to TurnWithoutAction stuck.")
+		Log.Anomaly("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed).."):  Disabled activeCommands."..colors.AutoRun.."AutoRun|r, state would have been inverted, and MoveAndSteer rebinding to TurnWithoutAction stuck.")
 	end
 end
 
@@ -245,7 +245,7 @@ end
 --
 function IA:SetCommandState(cmdName, active)
 	-- Set command active state. This changes the result of IA:ExpectedMouselook().
-	self.commandState[cmdName] = active
+	self.activeCommands[cmdName] = active
 
 	-- Update group state.
 	local groupName = self.commandsHooked[cmdName]
@@ -261,7 +261,7 @@ end
 function IA:SetGroupCommand(groupName, cmdName, active)
 	local group = self.commandGroups[groupName]
 	group[cmdName] = active or nil
-	self.commandState[groupName] = next(group)
+	self.activeCommands[groupName] = next(group)
 end
 
 
@@ -330,7 +330,7 @@ IA.lastMouselook = not not IsMouselooking()
 --
 function IA:ExpectedMouselook()
 	-- local groups = self.commandGroups
-	local cstate = self.commandState
+	local cstate = self.activeCommands
 	
 	-- Turn,Pitch is first in priority:
 	-- Requires Mouselook OFF to actually turn the character.

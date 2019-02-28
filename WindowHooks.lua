@@ -54,7 +54,7 @@ function IA.FrameOnShow(frame)
 	-- if already visible do nothing
 	if  not setInsertLast(IA.WindowsOnScreen, frame)  then  return  end
 
-	IA.commandState.ActionModeRecent = nil    -- There is a more recent event now.
+	IA.activeCommands.ActionModeRecent = nil    -- There is a more recent event now.
 	IA:UpdateMouselook(false, 'FrameOnShow')
 end
 
@@ -230,7 +230,7 @@ function IA:QUEST_PROGRESS(event)
 	-- Event QUEST_PROGRESS received as the quest frame is shown when talking to an npc
 	Log.Event(colors.show .. event .. colors.restore)
 	setInsertLast(self.WindowsOnScreen, 'QUEST_PROGRESS')
-	self.commandState.ActionModeRecent = nil    -- There is a more recent event now.
+	self.activeCommands.ActionModeRecent = nil    -- There is a more recent event now.
 	self:UpdateMouselook(false, event)
 end
 

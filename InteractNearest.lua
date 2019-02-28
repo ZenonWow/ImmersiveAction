@@ -278,7 +278,7 @@ function InteractNearest:Activate()
 	local active =  self.enabled  and  nil~=next(self.DynamicKeys)
 	if  not self.active == not active  then  return nil  end
 	self.active = active
-	IA.commandState.InteractNearest = active
+	IA.activeCommands.InteractNearest = active
 
 	if active then
 		self:RegisterEvent('PLAYER_REGEN_DISABLED')

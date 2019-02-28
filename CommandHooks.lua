@@ -89,7 +89,7 @@ IA.commandsChangingMouselook = {
 ----------------------------------
 
 local UniqueHooks = {}
-function UniqueHooks.ToggleAutoRun()  IA:SetCommandState('AutoRun', not IA.commandState.AutoRun)  end
+function UniqueHooks.ToggleAutoRun()  IA:SetCommandState('AutoRun', not IA.activeCommands.AutoRun)  end
 function UniqueHooks.StartAutoRun()  IA:SetCommandState('AutoRun', true)  end
 function UniqueHooks.StopAutoRun()  IA:SetCommandState('AutoRun', false)  end
 
@@ -108,9 +108,9 @@ end
 
 function IA:PLAYER_STOPPED_MOVING(event)
 	Log.Event(event)
-	if self.commandState.AutoRun then
+	if self.activeCommands.AutoRun then
 		IA:SetCommandState('AutoRun', false)
-		Log.Anomaly("  IA:PLAYER_STOPPED_MOVING():  Disabled commandState."..colors.AutoRun.."AutoRun|r, state would have been inverted, and MoveAndSteer rebinding to TurnWithoutAction stuck.")
+		Log.Anomaly("  IA:PLAYER_STOPPED_MOVING():  Disabled activeCommands."..colors.AutoRun.."AutoRun|r, state would have been inverted, and MoveAndSteer rebinding to TurnWithoutAction stuck.")
 		-- UpdateMouselook() does not depend on AutoRun, therefore not called.
 	end
 end
@@ -169,7 +169,7 @@ function IA:ToggleActionMode(toState)
 	-- Invert current state if called without argument.
 	if toState==nil then  toState = not IsMouselooking()  end
 	-- local inverseState = not self:ExpectedMouselook()
-	-- local inverseState = not self.commandState.ActionMode
+	-- local inverseState = not self.activeCommands.ActionMode
 	
 	self:SetActionMode(toState)
 	self:UpdateMouselook(toState, 'ToggleActionMode')
@@ -233,7 +233,7 @@ function IA:MODIFIER_STATE_CHANGED(event)
 	local modifiers = self.db.profile.modifiers
 	local IsEnableModPressed  = isModifierPressedFunc[ modifiers.enableModifier ]
 	local IsDisableModPressed = isModifierPressedFunc[ modifiers.disableModifier ]
-	local cstate = self.commandState
+	local cstate = self.activeCommands
 	cstate.enableModPressed  = IsEnableModPressed  and IsEnableModPressed ()
 	cstate.disableModPressed = IsDisableModPressed and IsDisableModPressed()
 	if cstate.enableModPressed and cstate.disableModPressed then
@@ -254,7 +254,7 @@ function IA:CURSOR_UPDATE(event, ...)
 	-- event is NOT sent when hiding cursor
 	3. after/before CURRENT_SPELL_CAST_CHANGED
 	--]]
-	local cstate = self.commandState
+	local cstate = self.activeCommands
 	local lastState = cstate.CursorObjectOrSpellTargeting
 	-- cstate.CursorHasItem = CursorHasItem()
 	cstate.CursorPickedUp = GetCursorInfo()
@@ -297,7 +297,7 @@ end
 
 --[[ No need for these to my best knowledge. CURSOR_UPDATE handles it.
 function IA:PET_BAR_UPDATE(event)
-	if  self.commandState.CursorObjectOrSpellTargeting  then
+	if  self.activeCommands.CursorObjectOrSpellTargeting  then
 		Log.Event(event, '  -> ResetCursor()')
 		ResetCursor()
 		-- Triggers CURSOR_UPDATE, that will do self:UpdateMouselook(not cursorAction, event)
@@ -305,7 +305,7 @@ function IA:PET_BAR_UPDATE(event)
 end
 
 function IA:ACTIONBAR_UPDATE_STATE(event)
-	if  self.commandState.CursorObjectOrSpellTargeting  then
+	if  self.activeCommands.CursorObjectOrSpellTargeting  then
 		Log.Event(event, '  -> ResetCursor()')
 		ResetCursor()
 		-- Triggers CURSOR_UPDATE, that will do self:UpdateMouselook(not cursorAction, event)
