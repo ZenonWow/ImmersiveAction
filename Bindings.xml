@@ -16,6 +16,12 @@
 	<ModifiedClick action="Interact" default="CTRL" /> 
 
 
+	<Binding name="ReleaseCursor" runOnUp="true" hidden="true" >
+		-- Release mouse cursor in ActionMode. Opposite of TurnWithoutInteract.
+		-- Internal command used in OverrideBindings.lua # OverridesIn.ActionMode.TURNORACTION
+		ImmersiveAction:ReleaseCursor(keystate == 'down')
+	</Binding>
+
 	<Binding name="TurnWithoutInteract" runOnUp="true" >
 		-- Turn without Interacting. Used when we don't want the RightButton to Interact upon release.
 		ImmersiveAction:TurnWithoutInteract(keystate == 'down')

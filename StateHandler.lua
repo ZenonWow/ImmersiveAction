@@ -42,7 +42,32 @@ IA.commandGroups = {
 	Turn       = {},
 	Pitch      = {},
 	MoveKeys   = {},
-	Mouselook  = {},
+	MouseTurn  = {},
+	MouseCursor= {},
+}
+
+IA.commandGrouping = {
+	TurnLeft			= 'Turn',
+	TurnRight			= 'Turn',
+	PitchUp				= 'Pitch',
+	PitchDown			= 'Pitch',
+
+	CameraOrSelectOrMove = false,  -- Not always MouseCursor:  actionModeMoveWithCameraButton needs Mouselook to make it move.
+	-- CameraOrSelectOrMove = 'MouseCursor',  -- If actionModeMoveWithCameraButton rebinds LeftButton to MoveForward, then this is cleanly MouseCursor.
+	TurnOrAction	= 'MouseTurn',
+	-- TurnOrAction	= false,            -- Custom: sets Mouselook to inverse of lastMouselook.
+	TurnWithoutInteract = 'MouseTurn',
+	ReleaseCursor       = 'MouseCursor',
+
+	MoveAndSteer	= 'MouseTurn',
+	-- TargetScanEnemy, TargetNearestEnemy:
+	TargetPriorityHighlight	= 'MouseTurn',
+	Mouselook     = 'MouseTurn',      -- Capture addons' usage and take into account.
+
+	MoveForward		= 'MoveKeys',
+	MoveBackward	= 'MoveKeys',
+	StrafeLeft		= 'MoveKeys',
+	StrafeRight		= 'MoveKeys',
 }
 
 --[[
@@ -73,7 +98,7 @@ function IA:SetActionMode(enable)
 	if cstate.ActionModeRecent == enable then  return  end
 	cstate.ActionModeRecent = enable
 	cstate.ActionMode = enable
-	self.OverrideBindings:OverrideCommandsIn('ActionMode', enable)
+	self.OverrideBindings:UpdateOverrides()
 end
 
 
@@ -110,19 +135,29 @@ end
 function IA:ProcessCommand(cmdName, pressed)
 	local cstate = self.commandState
 
+	-- if cmdName == 'MoveForward' and GetMouseButtonClicked() then
+	if cmdName == 'MoveForward' then
+		-- Log.Anomaly("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed)..") - patched to MoveAndSteer, GetMouseButtonClicked()="..tostring(GetMouseButtonClicked()))
+		cmdName = 'MoveAndSteer'
+	end
+
 	if pressed and cstate.AutoRun then  self:CheckAutoRun(cmdName, pressed)  end
 	cmdName = self:CheckStuckState(cmdName, pressed)
 	self:CheckActionMode(cmdName, pressed)
-	
+
+	--[[
 	-- TurnOrAction inverts the previous Mouselook state (the state before it was pressed).
 	if cmdName == 'TurnOrAction' then
 		if pressed
-		then  cstate.TurnOrActionForcesState = not IA.lastMouselook
+		-- then  cstate.TurnOrActionForcesState = not IA.lastMouselook
+		-- then  cstate.TurnOrActionForcesState = not cstate.ActionMode
+		then  cstate.TurnOrActionForcesState = true
 		else  cstate.TurnOrActionForcesState = nil
 		end
 		-- Note: This is the secure hook ran after TurnOrActionStart(), which just enabled Mouselook,
 		-- therefore IsMouselooking() returns true in any case.
 	end
+	--]]
 
 	self:SetCommandState(cmdName, pressed)
 	Log.Command("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed)..")")
@@ -151,10 +186,6 @@ function IA:CheckStuckState(cmdName, pressed)
 			Log.Anomaly("  IA:ProcessCommand("..colors.red..cmdName.."|r):  "..suffix)
 		end
 	else
-		if cmdName == 'MoveForward' and GetMouseButtonClicked() then
-			Log.Anomaly("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed)..") - patched to MoveAndSteer")
-			cmdName = 'MoveAndSteer'
-		end
   end
 	return cmdName
 end
@@ -221,7 +252,7 @@ function IA:SetCommandState(cmdName, active)
 	if  groupName  then  self:SetGroupCommand(groupName, cmdName, active)  end
 
 	-- Update bindings.
-	if cmdName=='AutoRun' then  IA.OverrideBindings:OverrideCommandsIn(cmdName, nil)  end
+	if cmdName=='AutoRun' then  IA.OverrideBindings:UpdateOverrides()  end
 
 	return true
 end
@@ -315,7 +346,9 @@ function IA:ExpectedMouselook()
 	-- TurnOrAction (RightButton) will _invert_ the Mouselook state active at the time it is pressed.
 	-- It takes precedence over WindowsOnScreen, SpellIsTargeting, CursorPickedUp, MoveAndSteer and modifiers (Shift/Ctrl/Alt).
 	-- As long as you press the RightButton those do not matter, nor effect the behaviour.
-	if  nil~=cstate.TurnOrActionForcesState  then  return cstate.TurnOrActionForcesState, 'TurnOrAction'  end
+	-- if  nil~=cstate.TurnOrActionForcesState  then  return cstate.TurnOrActionForcesState, 'TurnOrAction'  end
+	if  cstate.TurnOrAction then  return true , 'TurnOrAction'      end
+	if  cstate.MouseCursor  then  return false, cstate.MouseCursor  end
 
 	-- In ActionMode (enables MouselookMode) the LeftButton would do MoveAndSteer instead of FreeCameraMode,
 	-- just like when both buttons are pressed. To enter FreeCameraMode we disable MouselookMode.
@@ -327,7 +360,7 @@ function IA:ExpectedMouselook()
 
 	-- MoveAndSteer,TargetScanEnemy,TargetNearestEnemy takes precedence over WindowsOnScreen, SpellIsTargeting and CursorPickedUp.
 	-- Maybe all Move,Strafe bound to mouse button should do so. In that case extra logic is needed to detect when Move is caused by a mouse button.
-	if  cstate.Mouselook  then  return true, "Mouselook:"..tostring(cstate.Mouselook)  end		-- 'MoveAndSteer, ScanEnemy', addons using MouselookStart()  end
+	if  cstate.MouseTurn  then  return true, "MouseTurn:"..tostring(cstate.MouseTurn)  end		-- 'MoveAndSteer, ScanEnemy', addons using MouselookStart()  end
 
 	if  cstate.enableModPressed   then  return true,  'enableModPressed'   end
 	if  cstate.disableModPressed  then  return false, 'disableModPressed'  end

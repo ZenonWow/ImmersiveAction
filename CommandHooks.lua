@@ -10,12 +10,12 @@ local Log = IA.Log or {}  ;  IA.Log = Log
 ----------------------
 
 -- Label visible in key bindings UI.
-BINDING_HEADER_ImmersiveAction  = "Immersive Action"
+BINDING_HEADER_ImmersiveAction    = "Immersive Action"
 
 -- Custom commands
-BINDING_NAME_INTERACTNEAREST    = "Target and interact closest friendly npc"
-BINDING_NAME_ToggleActionMode   = "Toggle Action mode"
-BINDING_NAME_TurnOrActionHijack = "Turn without Interacting"
+BINDING_NAME_INTERACTNEAREST      = "Target and interact closest friendly npc"
+BINDING_NAME_ToggleActionMode     = "Toggle Action mode"
+BINDING_NAME_TurnWithoutInteract  = "Turn without Interacting"
 
 -- Builtin commands without a description
 BINDING_NAME_CAMERAORSELECTORMOVE = "Rotate Camera     (LeftButton default)"
@@ -37,14 +37,14 @@ IA.commandsHooked = {
 	PitchUp				= 'Pitch',
 	PitchDown			= 'Pitch',
 
-	CameraOrSelectOrMove		= false,  -- Solo
-	-- TurnOrAction	= 'Mouselook',
-	TurnOrAction	= false,            -- Custom: sets Mouselook to inverse of lastMouselook.
+	CameraOrSelectOrMove = 'MouseCursor',  -- Solo
+	TurnOrAction	= 'MouseTurn',
+	-- TurnOrAction	= false,            -- Custom: sets Mouselook to inverse of lastMouselook.
 
-	MoveAndSteer	= 'Mouselook',
+	MoveAndSteer	= 'MouseTurn',
 	-- TargetScanEnemy, TargetNearestEnemy:
-	TargetPriorityHighlight	= 'Mouselook',
-	Mouselook     = 'Mouselook',      -- Capture addons' usage and take into account.
+	TargetPriorityHighlight	= 'MouseTurn',
+	Mouselook     = 'MouseTurn',      -- Capture addons' usage and take into account.
 
 	MoveForward		= 'MoveKeys',
 	MoveBackward	= 'MoveKeys',
@@ -96,7 +96,7 @@ function UniqueHooks.StopAutoRun()  IA:SetCommandState('AutoRun', false)  end
 
 function IA:CommandHook(cmdName, pressed, event)
 	self:ProcessCommand(cmdName, pressed)
-	-- if self.commandsHooked[cmdName]=='Mouselook' then  possibleTransition = pressed  else  possibleTransition = not pressed  end
+	-- if self.commandsHooked[cmdName]=='MouseTurn' then  possibleTransition = pressed  else  possibleTransition = not pressed  end
 	-- Do MouselookStart/Stop as necessary
   self:UpdateMouselook(nil, event)
 end
@@ -178,8 +178,14 @@ end
 
 function IA:TurnWithoutInteract(pressed)
 	-- Like TurnOrAction (RightButton), without accidental interacting / pull / target change when released.
-	self:SetCommandState('TurnOrAction', pressed)
-	self:UpdateMouselook(nil, 'TurnWithoutInteract')
+	self:SetCommandState('TurnWithoutInteract', pressed)
+	self:UpdateMouselook(true, 'TurnWithoutInteract')
+end
+
+function IA:ReleaseCursor(pressed)
+	-- RightButton in ActionMode.
+	self:SetCommandState('ReleaseCursor', pressed)
+	self:UpdateMouselook(false, 'ReleaseCursor')
 end
 
 --[[
