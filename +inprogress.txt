@@ -1,12 +1,7 @@
+LibStub:GetDependency -> LibStub.AfterNewLibrary
 
-my/notes/* -> wow/*
-([^\s~=])=   ->   \1 = 
-AutoRun Click -> MouseTurn
-TurnOrAction -> MouseTurn
+
 others? ->
-commandState -> activeCommands
-TurnNoInteract -> TurnWithoutInteract, SetCommandState'MouseTurn'
-SetCommandState -> SetCommandActive
 CURSOR_UPDATE
 isModifierPressedFunc -> Shared
 
@@ -14,5 +9,12 @@ QUEST_PROGRESS:  see leatrix for previous event
 BANK, etc. events:  support any bag addon
 auction,tradeskill ditto
 
-Bindings.xml
-Interact
+
+
+
+/dump GetAddOnMetadata('oUF_Mlight','SavedVariablesPerCharacter')
+/dump GetAddOnMetadata('oUF_Mlight','Interface'), GetAddOnMetadata('oUF_Mlight','Title'), GetAddOnMetadata('oUF_Mlight','Author'), GetAddOnMetadata('oUF_Mlight','Version'), GetAddOnMetadata('oUF_Mlight','Credits')
+/dump GetAddOnMetadata('oUF_Mlight','OptionalDeps')
+/dump GetAddOnMetadata('oUF_Mlight','X-Load-OnlyOne')
+/dump GetAddOnMetadata('oUF_MovableFrames','X-SavedVariables')
+

@@ -14,16 +14,37 @@
 /run SetBinding('CTRL-BUTTON1','AUTORUN') SetBinding('CTRL-BUTTON2','AUTORUN')
 /run SetBinding('ALT-BUTTON1','AUTORUN') SetBinding('ALT-BUTTON2','AUTORUN')
 /run SetBinding('ALT-BUTTON1','ToggleActionMode') SetBinding('ALT-BUTTON2','AUTORUN')
-/run SetBinding('BUTTON4','MOVEANDSTEER')
-/run SetBinding('BUTTON4','AUTORUN')
 /run SetBinding('ALT-BUTTON4','ToggleActionMode') SetBinding('BUTTON5','ToggleActionMode')
+/run SetBinding('CTRL-BUTTON1','INTERACTNEAREST')
 
+/run SetBinding('BUTTON4','AUTORUN')
+/run SetBinding('BUTTON4','MOVEANDSTEER')
+/run SetBinding('BUTTON4','CAMERAORSELECTORMOVE') SetBinding('BUTTON1','MOVEANDSTEER')
+/run SetBinding('BUTTON1','CAMERAORSELECTORMOVE') SetBinding('BUTTON4','MOVEANDSTEER')
+/run IA.db.profile.bindings = nil
+/run local B = IA.db.profile.bindingsInGeneral ; B. BUTTON1 = 'MOVEANDSTEER'  B['ALT-BUTTON1'] = 'AUTORUN'  B. BUTTON4 = 'CAMERAORSELECTORMOVE'
+/run local B = IA.db.profile.bindingsInActionMode ; B. BUTTON2 = 'AUTORUN'
+/run IA.UserBindings:UpdateUserBindings()
 
+/dump GetBindingByKey('MOUSEWHEELUP'), GetBindingByKey('MOUSEWHEELDOWN'), GetBindingByKey('MOVEANDSTEER'), GetBindingByKey('MOVEFORWARD')
 /dump GetBindingByKey('BUTTON1'), GetBindingByKey('BUTTON2'), GetBindingByKey('ALT-BUTTON1'), GetBindingByKey('ALT-BUTTON2')
 /dump GetBindingByKey('CTRL-BUTTON1'), GetBindingByKey('CTRL-BUTTON2'), GetBindingByKey('SHIFT-BUTTON1'), GetBindingByKey('SHIFT-BUTTON2')
 
 
-
+/run IA.db.profile.bindingsInGeneral = { ["BUTTON1"] = "MOVEANDSTEER", ["BUTTON2"] = "AUTORUN", ["BUTTON4"] = "CAMERAORSELECTORMOVE", ["BUTTON5"] = "AUTORUN", ["ALT-BUTTON1"] = "CAMERAORSELECTORMOVE", ["ALT-BUTTON2"] = "TURNORACTION", ["ALT-BUTTON4"] = "ToggleActionMode", ["SHIFT-BUTTON1"] = "STRAFELEFT", ["SHIFT-BUTTON2"] = "STRAFERIGHT", ["CTRL-BUTTON1"] = "INTERACTNEAREST", ["CTRL-BUTTON2"] = "INTERACTMOUSEOVER", }
+/run IA.db.profile.bindingsInGeneral = {
+["BUTTON1"] = "MOVEANDSTEER",
+["BUTTON2"] = "AUTORUN",
+["BUTTON4"] = "CAMERAORSELECTORMOVE",
+["BUTTON5"] = "AUTORUN",
+["ALT-BUTTON1"] = "CAMERAORSELECTORMOVE",
+["ALT-BUTTON2"] = "TURNORACTION",
+["ALT-BUTTON4"] = "ToggleActionMode",
+["SHIFT-BUTTON1"] = "STRAFELEFT",
+["SHIFT-BUTTON2"] = "STRAFERIGHT",
+["CTRL-BUTTON1"] = "INTERACTNEAREST",
+["CTRL-BUTTON2"] = "INTERACTMOUSEOVER",
+}
 
 ----------------------
 -- Binding profiles --
