@@ -110,8 +110,8 @@ local Log = IA.Log or {}  ;  IA.Log = Log
 --------------------------
 
 -- Initial state:
--- IA.commandState.ActionMode= nil
--- IA.commandState.ActionModeRecent= nil
+-- IA.commandState.ActionMode = nil
+-- IA.commandState.ActionModeRecent = nil
 
 
 function IA:OnInitialize()
@@ -126,10 +126,10 @@ function IA:OnInitialize()
 	Use one profile called 'Default' for all characters originally
 	Name of default profile can be changed with setting  profileKeys['default']
 	To have character-specific profiles when creating/initializing a new character
-	/run  ImmersiveActionDB.profileKeys['default']= false
+	/run  ImmersiveActionDB.profileKeys['default'] = false
 	--]]
-	local defaultProfile= ImmersiveActionDB  and  ImmersiveActionDB.profileKeys  and  ImmersiveActionDB.profileKeys.Default
-	if  defaultProfile == nil  then  defaultProfile= true  end		-- false to have character-specific profiles
+	local defaultProfile = ImmersiveActionDB  and  ImmersiveActionDB.profileKeys  and  ImmersiveActionDB.profileKeys.Default
+	if  defaultProfile == nil  then  defaultProfile = true  end		-- false to have character-specific profiles
 
 	self.db = LibStub("AceDB-3.0"):New("ImmersiveActionDB", self.defaultSettings, defaultProfile)
 	self.db.RegisterCallback(self, "OnProfileChanged", "ProfileChanged")
@@ -245,7 +245,7 @@ local function SetBindings(keys, command)
 	for  i,key  in  ipairs(keys)  do
 		SetBinding(key, command)
 	end
-	local name= G['BINDING_NAME_'.. command]  or  command
+	local name = G['BINDING_NAME_'.. command]  or  command
 	print('ImmersiveAction updating binding  "'.. name ..'":  '.. table.concat(keys, ', '))
 end
 

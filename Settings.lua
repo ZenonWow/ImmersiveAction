@@ -10,15 +10,15 @@ local indexOf = G.LibShared.Require.indexOf
 -- Default configuration
 ---------------------------
 
-IA.defaultSettings= {
+IA.defaultSettings = {
 	--global = { version = "1.0.0", },
-	profile= {
-		enabledOnLogin= false,
-		enableWithMoveKeys= false,
-		enableAfterBothButtons= true,
-		enableAfterMoveAndSteer= true,
-		disableWithLookAround= true,
-		actionModeMoveWithCameraButton= false,
+	profile = {
+		enabledOnLogin = false,
+		enableWithMoveKeys = false,
+		enableAfterBothButtons = true,
+		enableAfterMoveAndSteer = true,
+		disableWithLookAround = true,
+		actionModeMoveWithCameraButton = false,
 		bindingsInActionMode = {},
 		bindingsInGeneral = {  -- 2019-02-28:
 			--['BUTTON1']				= "INTERACTNEAREST",
@@ -59,7 +59,7 @@ IA.defaultSettings= {
 			['CTRL-BUTTON2']	= "INTERACTTARGET",
 			--]]
 		},
-		modifiers= {
+		modifiers = {
 		},
 	}
 }
@@ -166,9 +166,9 @@ end
 
 function Config:InitCommandLabels()
 	if  self.commandLabels  then  return self.commandLabels  end
-	self.commandLabels= {}
+	self.commandLabels = {}
 	for  i,command  in  ipairs(self.commands)  do
-		local label= self:GetCommandLabel(command)
+		local label = self:GetCommandLabel(command)
 		table.insert(self.commandLabels, label)
 	end
 	return self.commandLabels
@@ -178,10 +178,10 @@ end
 
 
 
-local optCnt= 0
+local optCnt = 0
 local function opt(key, name, desc, defValues)
-	optCnt= optCnt + 1
-	local optInfo= {
+	optCnt = optCnt + 1
+	local optInfo = {
 		name = name,
 		desc = desc,
 		order = optCnt,
@@ -189,22 +189,22 @@ local function opt(key, name, desc, defValues)
 		--width = "full",
 		values = defValues or Config:InitCommandLabels(),
 		get = function()
-			local value= IA.db.profile.bindings[key]
+			local value = IA.db.profile.bindings[key]
 			return  indexOf(Config.commands, value)
 		end,
 		set = function(info, idx)
-			local value= Config.commands[idx]
+			local value = Config.commands[idx]
 			if value=='' then  value = nil  end
 			IA.UserBindings:SetUserBinding('General', key, value)
 		end,
 	}
-	Config.optionsTable.args[key]= optInfo
+	Config.optionsTable.args[key] = optInfo
 	return optInfo
 end
 
 local function optMod(action, name, desc, defValues)
-	optCnt= optCnt + 1
-	local optInfo= {
+	optCnt = optCnt + 1
+	local optInfo = {
 		name = name,
 		desc = desc,
 		order = optCnt,
@@ -212,21 +212,21 @@ local function optMod(action, name, desc, defValues)
 		--width = "full",
 		values = Config.modifierKeys,
 		get = function()
-			local value= IA.db.profile.modifiers[action]
+			local value = IA.db.profile.modifiers[action]
 			return  indexOf(Config.modifierKeys, value)
 		end,
 		set = function(info, idx)
-			--if  value == ''  or  value == 'NONE'  then  value= nil  end
-			IA.db.profile.modifiers[action]= Config.modifierKeys[idx]
+			--if  value == ''  or  value == 'NONE'  then  value = nil  end
+			IA.db.profile.modifiers[action] = Config.modifierKeys[idx]
 		end,
 	}
-	Config.optionsTable.args[action]= optInfo
+	Config.optionsTable.args[action] = optInfo
 	return optInfo
 end
 
 local function optToggle(key, name, desc)
-	optCnt= optCnt + 1
-	local optInfo= {
+	optCnt = optCnt + 1
+	local optInfo = {
 		name = name,
 		desc = desc,
 		order = optCnt,
@@ -235,10 +235,10 @@ local function optToggle(key, name, desc)
 		-- setting = link(db).profile[key],
 		get = function()  return IA.db.profile[key]  end,
 		set = function(info, value)
-			IA.db.profile[key]= value
+			IA.db.profile[key] = value
 		end,
 	}
-	Config.optionsTable.args[key]= optInfo
+	Config.optionsTable.args[key] = optInfo
 	return optInfo
 end
 

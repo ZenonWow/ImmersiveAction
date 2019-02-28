@@ -133,7 +133,7 @@ function IA:HookCommands()
 		local stopFunc = CommandStopFunc[cmdName]
 		if stopFunc ~= false then  HookCommandPrefixed(self, cmdName, cmdName..'Start', stopFunc or cmdName..'Stop')  end
 	end
-	self.hooked= nil		-- free up, not used until /reload
+	self.hooked = nil		-- free up, not used until /reload
 	
 	for  funcName,hookFunc  in  pairs(UniqueHooks)  do
 		if  G[funcName]  then
@@ -168,8 +168,8 @@ end
 function IA:ToggleActionMode(toState)
 	-- Invert current state if called without argument.
 	if toState==nil then  toState = not IsMouselooking()  end
-	-- local inverseState= not self:ExpectedMouselook()
-	-- local inverseState= not self.commandState.ActionMode
+	-- local inverseState = not self:ExpectedMouselook()
+	-- local inverseState = not self.commandState.ActionMode
 	
 	self:SetActionMode(toState)
 	self:UpdateMouselook(toState, 'ToggleActionMode')
@@ -222,7 +222,7 @@ function IA:RegisterCommandEvents(enable)
 end
 
 
-local isModifierPressedFunc= {
+local isModifierPressedFunc = {
 	SHIFT = IsShiftKeyPressed,
 	CTRL = IsCtrlKeyPressed,
 	ALT = IsAltKeyPressed,
@@ -254,7 +254,7 @@ function IA:CURSOR_UPDATE(event, ...)
 	-- event is NOT sent when hiding cursor
 	3. after/before CURRENT_SPELL_CAST_CHANGED
 	--]]
-	local cstate= self.commandState
+	local cstate = self.commandState
 	local lastState = cstate.CursorObjectOrSpellTargeting
 	-- cstate.CursorHasItem = CursorHasItem()
 	cstate.CursorPickedUp = GetCursorInfo()

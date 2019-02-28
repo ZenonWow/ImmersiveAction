@@ -476,7 +476,7 @@ function WorldClickHandler:FixAccidentalRightClick(frame, button)
 	or  self.RunToDoubleClickGround  and  not self.wasMouseover
   then  --  and not InCombatLockdown() then
 		print("IA.FixB2: RunToDoubleClick")
-		local prevClickToMove= GetCVar('AutoInteract')    --  Adequately named cvar.
+		local prevClickToMove = GetCVar('AutoInteract')    --  Adequately named cvar.
 		if  prevClickToMove ~= '1'  then  SetCVar('AutoInteract', '1') ; self.prevClickToMove = prevClickToMove  end
 	else
 		print("IA.FixB2: Interact")
@@ -784,7 +784,7 @@ end
 /run SetOverrideBinding(ImmersiveAction.UserBindings, false, 'BUTTON1', nil) ; SetOverrideBinding(ImmersiveAction.UserBindings, false, 'BUTTON2', nil)
 
 /dump  ImmersiveAction.UserBindings.keyMap
-/run  ClearOverrideBindings(ImmersiveAction.UserBindings) ; ImmersiveAction.UserBindings.keyMap= nil
+/run  ClearOverrideBindings(ImmersiveAction.UserBindings) ; ImmersiveAction.UserBindings.keyMap = nil
 /run  SetOverrideBinding(ImmersiveAction.UserBindings, false, 'BUTTON1', nil)
 /run  SetOverrideBinding(ImmersiveAction.UserBindings, false, 'BUTTON1', 'TURNORACTION')
 /run  ImmersiveAction:UpdateUserBindings()

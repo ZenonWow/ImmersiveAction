@@ -16,8 +16,8 @@ local colors = IA.colors
 /dump ImmersiveAction.WindowsOnScreen
 -- Overridden bindings:
 
-/dump ImmersiveAction.MouselookOverrideBindings= {}
-/dump ImmersiveAction.MoveAndSteerKeys= {}
+/dump ImmersiveAction.MouselookOverrideBindings = {}
+/dump ImmersiveAction.MoveAndSteerKeys = {}
 
 -- Settings:
 /dump ImmersiveAction.db.profile
@@ -39,11 +39,11 @@ IA.commandState = {}
 
 -- commandGroups:  `nil` is 'not pressed'
 IA.commandGroups = {
-	Turn       = {},
-	Pitch      = {},
-	MoveKeys   = {},
-	MouseTurn  = {},
-	MouseCursor= {},
+	Turn        = {},
+	Pitch       = {},
+	MoveKeys    = {},
+	MouseTurn   = {},
+	MouseCursor = {},
 }
 
 IA.commandGrouping = {
@@ -111,7 +111,7 @@ function  IA:ResetState()
 	local cstate = self.commandState
 	for  cmdName,pressed  in  pairs(cstate)  do  if  pressed  then
 		Log.State('  '.. colors.red .. cmdName ..'|r was PRESSED, is reset now')
-		-- cstate[cmdName]= nil
+		-- cstate[cmdName] = nil
 	end end -- for if
 	wipe(cstate)
 	
@@ -182,7 +182,7 @@ function IA:CheckStuckState(cmdName, pressed)
 			Log.Anomaly("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed)..") - patched to MoveAndSteer")
 			cmdName = 'MoveAndSteer'
 		else
-			local suffix= pressed  and  "key pressed again without being released. Stuck key?"  or  "key released without being pressed before."
+			local suffix = pressed  and  "key pressed again without being released. Stuck key?"  or  "key released without being pressed before."
 			Log.Anomaly("  IA:ProcessCommand("..colors.red..cmdName.."|r):  "..suffix)
 		end
 	else
@@ -259,7 +259,7 @@ end
 
 
 function IA:SetGroupCommand(groupName, cmdName, active)
-	local group= self.commandGroups[groupName]
+	local group = self.commandGroups[groupName]
 	group[cmdName] = active or nil
 	self.commandState[groupName] = next(group)
 end
@@ -272,34 +272,34 @@ end
 -------------------------------------------
 
 function  IA:UpdateMouselook(possibleTransition, event)
-	event= event  or  'nil'
-	local currentState= not not IsMouselooking()
-	local outsideChange= self.lastMouselook ~= currentState
+	event = event  or  'nil'
+	local currentState = not not IsMouselooking()
+	local outsideChange = self.lastMouselook ~= currentState
 	
 	-- Report modified IsMouselooking() to catch commands changing it. Like  MoveAndSteerStart  and  TurnOrActionStart
 	if  outsideChange  and  currentState ~= self.commandsChangingMouselook[event]  then
 		Log.Anomaly('  '.. colors.red .. event .. '|r changed Mouselook: '.. colorBoolStr(self.lastMouselook, true) ..'->'.. colorBoolStr(currentState, true) )
 	end
 	
-	local expState, reason= self:ExpectedMouselook()
+	local expState, reason = self:ExpectedMouselook()
 	if  possibleTransition ~= nil  and  expState ~= possibleTransition  and  expState ~= currentState  and  not outsideChange  then
 		Log.Anomaly('  IA:Update('.. event:sub(1,16) ..'):  '.. colors.yellow .. reason ..'|r->'.. colorBoolStr(expState, colors.red)  ..' is not possibleTransition='.. colorBoolStr(possibleTransition))
 	end
 	
 	-- Report every update, reason and result for debugging
 	-- Show state in red if it was outsideChange (the command or other event changed it)
-	local stateColor= (expState ~= currentState)  or  outsideChange and colors.red
+	local stateColor = (expState ~= currentState)  or  outsideChange and colors.red
 	
-	local stateStr= colorBoolStr(expState, stateColor)
-	local prefix= 'IA:Update('.. colorBoolStr(possibleTransition) ..','.. colors.event .. event:sub(1,16) ..'|r):  '
-	--local suffix= colors.lightblue .. reason ..'|r->'.. stateStr .. '|n------'
-	local suffix= reason ..'->'.. stateStr			-- .. '|n------'
+	local stateStr = colorBoolStr(expState, stateColor)
+	local prefix = 'IA:Update('.. colorBoolStr(possibleTransition) ..','.. colors.event .. event:sub(1,16) ..'|r):  '
+	--local suffix = colors.lightblue .. reason ..'|r->'.. stateStr .. '|n------'
+	local suffix = reason ..'->'.. stateStr			-- .. '|n------'
 	
 	if  (self.lastMouselook ~= expState)  or  outsideChange
   then  Log.State(prefix .. suffix)
 	else  Log.Update(prefix .. suffix)
   end
-	self.lastMouselook= expState
+	self.lastMouselook = expState
 	
 	-- Commit the change
 	if  expState ~= currentState  then
@@ -309,12 +309,12 @@ function  IA:UpdateMouselook(possibleTransition, event)
 			return
 		end
 		if  expState  then  IA.MouselookStart()  else  IA.MouselookStop()  end
-		--self.lastMouselookSet= expState
+		--self.lastMouselookSet = expState
 	end
 end
 
-IA.lastMouselook= not not IsMouselooking()
---IA.lastMouselookSet= false
+IA.lastMouselook = not not IsMouselooking()
+--IA.lastMouselookSet = false
 
 
 

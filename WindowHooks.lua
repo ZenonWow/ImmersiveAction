@@ -61,7 +61,7 @@ end
 
 function IA.FrameOnHide(frame)
 	Log.Frame('  IA.FrameOnHide('.. colors.hide .. frame:GetName() ..'|r)')
-	local removed= removeFirst(IA.WindowsOnScreen, frame)
+	local removed = removeFirst(IA.WindowsOnScreen, frame)
 	if  not removed  then  return  end
 	
 	IA:UpdateMouselook(true, 'FrameOnHide')
@@ -171,17 +171,17 @@ function  IA:HookUpFrames()
 	wipe(FramesToHookMap)
 	for  idx, frameName  in  ipairs(self.FramesToHook)  do
 		-- if  self.HookedFrames[frameName]  then  print('ImmersiveAction:HookUpFrames(): frame hooked again:  ' .. frameName)  end
-		local frame= self:HookFrame(frameName)
+		local frame = self:HookFrame(frameName)
 		if  not frame  then	
 			-- missing frames stored for a next round
 			FramesToHookMap[frameName] = frameName
-			FramesToHookNew[#FramesToHookNew+1]= frameName
+			FramesToHookNew[#FramesToHookNew+1] = frameName
 		end
 	end
 
-	self.FramesToHook= FramesToHookNew
+	self.FramesToHook = FramesToHookNew
 	if  0 < #FramesToHookNew  and  self.logging._on('Init')  and  self.logging.Anomaly  then
-		--local missingList= table.concat(FramesToHookNew, ', ')		-- this can be long
+		--local missingList = table.concat(FramesToHookNew, ', ')		-- this can be long
 		Log.Init('  IA:HookUpFrames():  missing '.. #FramesToHookNew ..' frames.  List them by entering   /dump ImmersiveAction.FramesToHook')
 	end
 	
