@@ -1,8 +1,8 @@
-local GL, ADDON_NAME, ADDON = _G, ...
-local IA = GL.ImmersiveAction or {}  ;  GL.ImmersiveAction = IA
+local G, ADDON_NAME, ADDON = _G, ...
+local IA = G.ImmersiveAction or {}  ;  G.ImmersiveAction = IA
 -- local Log = IA.Log or {}  ;  IA.Log = Log
 
-local indexOf = GL.LibShared.Require.indexOf
+local indexOf = G.LibShared.Require.indexOf
 
 
 
@@ -161,7 +161,7 @@ Config.commandLabelsCustom = {
 
 
 function Config:GetCommandLabel(command)
-	return self.commandLabelsCustom[command]  or  GL['BINDING_NAME_'.. command]  or  command
+	return self.commandLabelsCustom[command]  or  G['BINDING_NAME_'.. command]  or  command
 end
 
 function Config:InitCommandLabels()

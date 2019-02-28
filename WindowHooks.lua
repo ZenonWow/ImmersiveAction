@@ -1,10 +1,10 @@
-local GL, ADDON_NAME, ADDON = _G, ...
-local IA = GL.ImmersiveAction or {}  ;  GL.ImmersiveAction = IA
+local G, ADDON_NAME, ADDON = _G, ...
+local IA = G.ImmersiveAction or {}  ;  G.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 
 assert(ADDON.WindowList, "Include WindowList.lua before WindowHooks.lua")
 local getSubField = assert(ADDON.getSubField, "getSubField() missing from WindowList.lua")
-local tDeleteItem = GL.tDeleteItem  -- from FrameXML/Util.lua
+local tDeleteItem = G.tDeleteItem  -- from FrameXML/Util.lua
 local colors = IA.colors
 
 local DB
@@ -29,7 +29,7 @@ local FramesToHookMap = {}
 
 
 local indexOf = LibShared.Require.indexOf
-local removeFirst = assert(GL.tDeleteItem, "Bliz deleted FrameXML/Util.lua # function tDeleteItem()")
+local removeFirst = assert(G.tDeleteItem, "Bliz deleted FrameXML/Util.lua # function tDeleteItem()")
 
 local function setInsertLast(t, item)
 	if  indexOf(t, item)  then  return false  end
@@ -93,8 +93,8 @@ end
 
 
 function  IA:HookFrame(frameName, frame)
-	-- GL[frameName] and getglobal(frameName) does not work for child frames like "MovieFrame.CloseDialog"
-	if not frame and type(frameName)=='string' then  frame = GL[frameName]  or  getSubField(GL, frameName)  end
+	-- G[frameName] and getglobal(frameName) does not work for child frames like "MovieFrame.CloseDialog"
+	if not frame and type(frameName)=='string' then  frame = G[frameName]  or  getSubField(G, frameName)  end
 	if not frame  or  self.HookedFrames[frameName] then  return frame  end
 	-- if not frame.GetName then  print("No GetName():", frameName, frame, type(frame))  end
 	if not frame.GetName then  DBAdd('NoGetName', frameName)  end
@@ -135,7 +135,7 @@ end
 
 local function InitDB()
 	if DB then  return  end
-	DB = GL.ImmersiveActionDB or {}  ;  GL.ImmersiveActionDB = DB
+	DB = G.ImmersiveActionDB or {}  ;  G.ImmersiveActionDB = DB
 	DB.NoGetName = ""
 	DB.NonHook = ""
 	DB.ErrHook = ""
@@ -155,12 +155,12 @@ function  IA:HookUpFrames()
 	end
 
 	-- Monitor UIPanelWindows{}:  main bliz windows.
-	for  frameName,frame  in  pairs(GL.UIPanelWindows)  do
+	for  frameName,frame  in  pairs(G.UIPanelWindows)  do
 		self:HookFrame(frameName, frame)
 	end
 
 	-- Monitor UISpecialFrames[]:  some windows added by bliz FrameXML and also addons. No need to list them by name.
-	for  idx, frameName  in  ipairs(GL.UISpecialFrames)  do
+	for  idx, frameName  in  ipairs(G.UISpecialFrames)  do
 		self:HookFrame(frameName)
 	end
 

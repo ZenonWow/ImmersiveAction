@@ -1,4 +1,4 @@
-local GL, ADDON_NAME, ADDON = _G, ...
+local G, ADDON_NAME, ADDON = _G, ...
 -- This file lists window names that need visible mousecursor so that the user can interact with them.
 -- Exports:  ADDON.WindowList:  an array (list) of frame names.
 
@@ -27,12 +27,12 @@ AccountantFrame          ImmersionFrame           BagnonFrameinventory     GwCha
 FlightMapFrame           MovieFrame.CloseDialog   CinematicFrameCloseDialog
 AdiBagsContainer1        AdiBackpack              AdiBank                  ElephantFrame            
 ]===]
--- To get the frame  MovieFrame.CloseDialog  use the function  getSubField(GL, name)
+-- To get the frame  MovieFrame.CloseDialog  use the function  getSubField(G, name)
 
 
 --- getSubField(root, name)
 -- Get a field of a field (of a field) in root, recursively traveling to any depth in the tree.
--- E.g. getSubField(GL, 'MovieFrame.CloseDialog')  will return GL.MovieFrame.CloseDialog == GL['MovieFrame']['CloseDialog']
+-- E.g. getSubField(G, 'MovieFrame.CloseDialog')  will return G.MovieFrame.CloseDialog == G['MovieFrame']['CloseDialog']
 -- @param root (table) - starting point
 -- @param name (string) - field names to follow, separated by one dot ("."), no whitespace, no square brackets
 -- Just as it is written in Lua code.

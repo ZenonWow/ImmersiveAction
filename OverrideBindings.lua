@@ -1,5 +1,5 @@
-local GL, ADDON_NAME, ADDON = _G, ...
-local IA = GL.ImmersiveAction or {}  ;  GL.ImmersiveAction = IA
+local G, ADDON_NAME, ADDON = _G, ...
+local IA = G.ImmersiveAction or {}  ;  G.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 
 -- Used from LibShared:
@@ -208,7 +208,7 @@ end
 
 function OverrideBindings:ClearMouselookOverrideBindings()
 	for key,toCmd in pairsOrNil(self.MouselookOverrides) do
-		GL.SetMouselookOverrideBinding(key, nil)
+		G.SetMouselookOverrideBinding(key, nil)
 	end
 	wipe(self.MouselookOverrides)
 end
@@ -220,7 +220,7 @@ function OverrideBindings:SetMouselookOverrideBindings(fromCmd, toCmd)
 		if LibShared.softassert(not self.MouselookOverrides[key]) then
 			LibShared.softassertf(fromCmd~='TURNORACTION' and fromCmd~='TARGETSCANENEMY', "SetMouselookOverrideBindings():  overriding bindings of %q to %q will cause stucking in Mouselook mode.", fromCmd, toCmd)
 			self.MouselookOverrides[key] = toCmd
-			GL.SetMouselookOverrideBinding(key, toCmd)
+			G.SetMouselookOverrideBinding(key, toCmd)
 		end
 	end
 end
@@ -366,7 +366,7 @@ local MapButtonToKey = LibShared.MapButtonToKey
 local WorldClickHandler = CreateFrame('Frame', nil, nil, 'SecureHandlerMouseUpDownTemplate')
 IA.WorldClickHandler = WorldClickHandler
 -- Export to _G.WCH for DEVMODE.
-if GL.DEVMODE then  GL.WCH = GL.WCH or WCH  end
+if G.DEVMODE then  G.WCH = G.WCH or WCH  end
 
 -- Last GetTime() when the TurnButton (RightButton by default) was clicked.
 WorldClickHandler.LastTurnClick = 0
@@ -388,13 +388,13 @@ WorldClickHandler.hookedS   = { [WorldFrame] = {}, [UIParent] = {} }
 function WorldClickHandler.SetScript(frame, scriptName, callback)
 	LibShared.softassert(false, frame:GetName().."."..scriptName.."  SetScript-ed to next error:")
 	-- Without frame argument it is bound to crash on nil, if it's not a dummy.
-	GL.xpcall(callback)
+	G.xpcall(callback)
 end
 
 function WorldClickHandler.HookScript(frame, scriptName, postFunc)
 	LibShared.softassert(false, frame:GetName().."."..scriptName.."  HookScript-ed to next error:")
 	-- Without frame argument it is bound to crash on nil, if it's not a dummy.
-	GL.xpcall(postFunc)
+	G.xpcall(postFunc)
 end
 
 
@@ -648,7 +648,7 @@ local function HookM(self, target, methodName, postFunc)
 	if not postFunc then  return UnhookM(self, target, methodName)  end
 	if self.hookedM[target][methodName] then  return false  end
 	self.originalM[target][methodName] = target[methodName]
-	GL.hooksecurefunc(target, methodName, postFunc)
+	G.hooksecurefunc(target, methodName, postFunc)
 	self.hookedM[target][methodName] = target[methodName]
 	return true
 end
@@ -670,7 +670,7 @@ function WorldClickHandler:InitSecureHandler()
 
 	-- handler.MouselookStop = IA.MouselookStop
 	handler:Execute(WorldClickHandler.InitSnippet)
-	handler.Env = GL.GetManagedEnvironment(handler)
+	handler.Env = G.GetManagedEnvironment(handler)
 
 	-- handler:WrapScript(WorldFrame, 'OnMouseDown', prePressBody, nil)
 	-- handler:WrapScript(WorldFrame, 'OnMouseUp'  , preReleaseBody, postReleaseBody)

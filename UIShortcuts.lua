@@ -1,4 +1,4 @@
-local GL, ADDON_NAME, ADDON = _G, ...
+local G, ADDON_NAME, ADDON = _G, ...
 
 
 ------------------------------------------
@@ -6,8 +6,8 @@ local GL, ADDON_NAME, ADDON = _G, ...
 ------------------------------------------
 BINDING_HEADER_UIShortcuts        = "UI Shortcuts - usability keybindings"
 
-local UIShortcuts = GL.UIShortcuts or {}
-GL.UIShortcuts = UIShortcuts
+local UIShortcuts = G.UIShortcuts or {}
+G.UIShortcuts = UIShortcuts
 
 -- Bindings locales
 
@@ -18,9 +18,9 @@ BINDING_NAME_LookRight            = "Look right"
 
 -- Focus, Target selection
 UIShortcuts.FocusMouseoverBinding = 'CLICK FocusMouseoverButton'    -- Name must be the same as in Bindings.xml.
-GL['BINDING_NAME_'..UIShortcuts.FocusMouseoverBinding] = "Focus Mouseover"
+G['BINDING_NAME_'..UIShortcuts.FocusMouseoverBinding] = "Focus Mouseover"
 UIShortcuts.ClearTargetBinding    = 'CLICK ClearTargetButton'       -- Name must be the same as in Bindings.xml.
-GL['BINDING_NAME_'..UIShortcuts.ClearTargetBinding] = "Clear Target"
+G['BINDING_NAME_'..UIShortcuts.ClearTargetBinding] = "Clear Target"
 
 -- Eject a passenger. One at a time.
 BINDING_NAME_EjectPassenger       = "Eject a passenger"

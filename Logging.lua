@@ -1,5 +1,5 @@
-local GL, ADDON_NAME, ADDON = _G, ...
-local IA = GL.ImmersiveAction or {}  ;  GL.ImmersiveAction = IA
+local G, ADDON_NAME, ADDON = _G, ...
+local IA = G.ImmersiveAction or {}  ;  G.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 
 

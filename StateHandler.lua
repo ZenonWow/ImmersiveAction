@@ -1,6 +1,6 @@
 -- Methods for event handling, commandState update of IA, Mouselook, SmartTargeting
-local GL, ADDON_NAME, ADDON = _G, ...
-local IA = GL.ImmersiveAction or {}  ;  GL.ImmersiveAction = IA
+local G, ADDON_NAME, ADDON = _G, ...
+local IA = G.ImmersiveAction or {}  ;  G.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 local colorBoolStr = IA.colorBoolStr
 local colors = IA.colors
@@ -360,7 +360,7 @@ function IA:ExpectedMouselook()
 
 	-- MoveAndSteer,TargetScanEnemy,TargetNearestEnemy takes precedence over WindowsOnScreen, SpellIsTargeting and CursorPickedUp.
 	-- Maybe all Move,Strafe bound to mouse button should do so. In that case extra logic is needed to detect when Move is caused by a mouse button.
-	if  cstate.MouseTurn  then  return true, "MouseTurn:"..tostring(cstate.MouseTurn)  end		-- 'MoveAndSteer, ScanEnemy', addons using MouselookStart()  end
+	if  cstate.MouseTurn  then  return true, "MouseTurn:"..tostring(cstate.MouseTurn)  end		-- 'TurnWithoutInteract, MoveAndSteer, ScanEnemy' , addons using MouselookStart()  end
 
 	if  cstate.enableModPressed   then  return true,  'enableModPressed'   end
 	if  cstate.disableModPressed  then  return false, 'disableModPressed'  end

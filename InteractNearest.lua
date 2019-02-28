@@ -1,5 +1,5 @@
-local GL, ADDON_NAME, ADDON = _G, ...
-local IA = GL.ImmersiveAction or {}  ;  GL.ImmersiveAction = IA
+local G, ADDON_NAME, ADDON = _G, ...
+local IA = G.ImmersiveAction or {}  ;  G.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 
 local LibShared,CreateFrame,ipairs,GetBindingKey = LibShared,CreateFrame,ipairs,GetBindingKey
@@ -79,7 +79,7 @@ InCombatHandler.OverrideBindingInCombat = [===[
 ]===]
 
 
-local rtablepairs = GL.rtable.pairs
+local rtablepairs = G.rtable.pairs
 
 -- Pair of OverrideBindingInCombat in insecure (out-of-combat) context.
 function InCombatHandler:OverrideBindingOutOfCombat(command)
@@ -136,8 +136,8 @@ function InCombatHandler:InitSecureHandler()
 	-- In the heat of the battle this will seldom be noticed.
 
 	local handler = self    -- For clarity.
-	-- GL.SecureStateDriverManager:RegisterEvent("UPDATE_MOUSEOVER_UNIT")  -- necessary?
-	GL.RegisterStateDriver(handler, 'INTERACTNEAREST', NoCombatCondition .. MouseOverCondition .. TargetCondition)
+	-- G.SecureStateDriverManager:RegisterEvent("UPDATE_MOUSEOVER_UNIT")  -- necessary?
+	G.RegisterStateDriver(handler, 'INTERACTNEAREST', NoCombatCondition .. MouseOverCondition .. TargetCondition)
 
 	handler:SetAttribute('_onstate-'..'INTERACTNEAREST', self.OverrideBindingInCombat)
 	self.OverrideBindingInCombat = nil
@@ -147,7 +147,7 @@ function InCombatHandler:InitSecureHandler()
 	-- Create the "globals" available to the snippets in the protected environment.
 	-- DynamicKeys (key->toCmd) restricted table:
 	handler:Execute(" DynamicKeys = newtable() ")
-	handler.Env = GL.GetManagedEnvironment(handler)
+	handler.Env = G.GetManagedEnvironment(handler)
 
 	-- TargetCommand:  copy of InteractNearest.TargetCommand
 	-- handler:SetAttribute('_setTargetCommand', " TargetCommand = ... ")
