@@ -7,12 +7,7 @@ local getSubField = assert(ADDON.getSubField, "getSubField() missing from Window
 local tDeleteItem = GL.tDeleteItem  -- from FrameXML/Util.lua
 local colors = IA.colors
 
-local DB = GL.ImmersiveActionDB or {}  ;  GL.ImmersiveActionDB = DB
-DB.NonHook = ""
-DB.ErrHook = ""
-DB.ErrFrames = {}
-DB.GoodFrames = ""
-DB.MissFrames = ""
+local DB
 
 IA.WindowsOnScreen = {}
 IA.HookedFrames = {}
@@ -101,12 +96,13 @@ function  IA:HookFrame(frameName, frame)
 	-- GL[frameName] and getglobal(frameName) does not work for child frames like "MovieFrame.CloseDialog"
 	if not frame and type(frameName)=='string' then  frame = GL[frameName]  or  getSubField(GL, frameName)  end
 	if not frame  or  self.HookedFrames[frameName] then  return frame  end
-	if not frame.GetName then  print("No GetName():", frameName, frame, type(frame))  end
+	-- if not frame.GetName then  print("No GetName():", frameName, frame, type(frame))  end
+	if not frame.GetName then  DBAdd('NoGetName', frameName)  end
 
 	self.HookedFrames[frameName] = frame
 	
 	if not frame.HookScript then
-		print("  IA:HookFrame():  no HookScript -- ", frameName, frame, type(frame))
+		-- print("NonHook:  ", frameName)
 		DBAdd('NonHook', frameName)
 		-- Stop annoying.
 		-- return frame
@@ -137,8 +133,20 @@ end
 -- Hook all frames --
 ---------------------
 
+local function InitDB()
+	if DB then  return  end
+	DB = GL.ImmersiveActionDB or {}  ;  GL.ImmersiveActionDB = DB
+	DB.NoGetName = ""
+	DB.NonHook = ""
+	DB.ErrHook = ""
+	DB.ErrFrames = {}
+	DB.GoodFrames = ""
+	DB.MissFrames = ""
+end
+
 function  IA:HookUpFrames()
 	Log.Init('ImmersiveAction:HookUpFrames()')
+	InitDB()
 
 	if ADDON.WindowList and not self.FramesToHook then
 		self.FramesToHook = ADDON.WindowList

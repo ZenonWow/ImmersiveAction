@@ -4,7 +4,7 @@
 FreeCursorMode (normal) / FreeCameraMode (LeftButton) / MouselookMode (RightButton).
 FreeCameraMode = LookAroundMode = CameraMode
 FreeCursorMode = MouseCursorMode = CursorMode, for short.
-MouselookMode = RightClick
+MouseTurn = MouselookMode = RightClick
 ActionMode = ActionCameraMode = MouselookMode without pressing RightButton. Riding the hypetrain of ActionCombat (not in wow...) and ActionCamera (this is a thing, try DynamicCam addon).
 ActionControls..  found it..  ImmersiveActionControls  ImmersiveActionMode  ImmersiveAction
 ImmersiveControls  ImmersionControls  ImmersionCamera
@@ -92,6 +92,9 @@ Debug:
 local GL, ADDON_NAME, ADDON = _G, ...
 local IA = GL.ImmersiveAction or {}
 GL.ImmersiveAction = LibStub("AceAddon-3.0"):NewAddon(IA, "ImmersiveAction", "AceConsole-3.0", "AceEvent-3.0", "AceBucket-3.0")
+if IA.SetRealAddonName then  IA:SetRealAddonName(...)  end
+IA.name = 'ImmersiveAction'
+
 -- Export to _G.IA for DEVMODE.
 if GL.DEVMODE then  GL.IA = GL.IA or IA  end
 local Log = IA.Log or {}  ;  IA.Log = Log
@@ -255,8 +258,8 @@ end
 
 function IA:ChatCommand(input)
     if not input or input:trim() == "" then
-        InterfaceOptionsFrame_OpenToCategory(self.config.optionsFrame)
-        InterfaceOptionsFrame_OpenToCategory(self.config.optionsFrame)
+        InterfaceOptionsFrame_OpenToCategory(self.Config.optionsFrame)
+        InterfaceOptionsFrame_OpenToCategory(self.Config.optionsFrame)
     else
         LibStub("AceConfigCmd-3.0"):HandleCommand("ia", "ImmersiveAction", input)
     end

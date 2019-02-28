@@ -19,9 +19,8 @@ IA.defaultSettings= {
 		enableAfterMoveAndSteer= true,
 		disableWithLookAround= true,
 		actionModeMoveWithCameraButton= false,
-		bindingsInGeneral = {},
 		bindingsInActionMode = {},
-		bindings= {  -- 2018-10-21:
+		bindingsInGeneral = {  -- 2019-02-28:
 			--['BUTTON1']				= "INTERACTNEAREST",
 			['BUTTON1']				= "CAMERAORSELECTORMOVE",  -- Rotate Camera (LeftButton default),
 			['BUTTON2']				= "TURNORACTION",  -- Turn or Action (RightButton default),
@@ -77,17 +76,18 @@ IA.Config = Config
 Config.modifierKeys = { '', 'SHIFT', 'CTRL', 'ALT' }
 
 function Config:InitOptionsFrame()
-	if self.config.optionsFrame then  return  end
-	--self.config:InitCommandLabels()
-	--self.config:InitOptionsTable()
-	LibStub("AceConfig-3.0"):RegisterOptionsTable(self.config.name, self.config.optionsTable)
-	self.config.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(self.config.name, self.config.name)
+	if self.optionsFrame then  return  end
+	--self.InitCommandLabels()
+	--self.InitOptionsTable()
+	local name = IA.name or 'ImmersiveAction'
+	LibStub("AceConfig-3.0"):RegisterOptionsTable(name, self.optionsTable)
+	self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(name, name)
 end
 
 --[[ Commands vocabulary:
-turning (character with mouse) = ImmersiveAction (term from GuildWars2 community) = Mouselook (term from Blizzard - Wow lua api)
-camera (rotation) = look around with mouse, like turning, but the character does not move / change direction
-	- only possible with CAMERAORSELECTORMOVE command and disabled ImmersiveAction
+MouseTurn (turn character with mouse) = Mouselook (term from Blizzard - Wow lua api)
+FreeCameraMode = look around with camera, while the character does not change direction.
+	- only possible with CAMERAORSELECTORMOVE command and disabled MouselookMode
 --]]
 
 Config.commands = { 
