@@ -3,6 +3,38 @@ local G, ADDON_NAME, ADDON = _G, ...
 -- Exports:  ADDON.WindowList:  an array (list) of frame names.
 
 
+local FoundFrames = [===[
+QuestLogFrame            QuestLogDetailFrame      RaidParentFrame          WorldStateScoreFrame     VideoOptionsFrame       
+CharacterFrame           MailFrame                PetitionFrame            TabardFrame              SpellBookFrame          
+TradeFrame               PetStableFrame           TokenFrame               BankFrame                RaidBrowserFrame        
+GuildRegistrarFrame      TaxiFrame                GossipFrame              ACP_AddonList            KeyBindingFrame         
+DressUpFrame             CinematicFrame           LootFrame                Examiner                 ItemTextFrame           
+PVEFrame                 FriendsFrame             AudioOptionsFrame        QuestFrame               HelpFrame               
+ItemRefTooltip           ColorPickerFrame         Binder_Frame             CodeRunner               LeaPlusGlobalPanel       
+DebugPanel               ScrollOfResurrectionFrame  ScrollOfResurrectionSelectionFrame                
+GameMenuFrame            ChatConfigFrame          WorldMapFrame            MerchantFrame            FBCSettingsDialog       
+MacroText_CustomizeFrame IconSelectionDialogPopup VoiceMacroMenu           CoinPickupFrame          PaperDollFrame          
+PetPaperDollFrame        RaidFrame                ReputationFrame          StackSplitFrame          StatsFrame              
+TutorialFrame            StaticPopup1             StaticPopup2             StaticPopup3             StaticPopup4            
+ContainerFrame1          ContainerFrame2          ContainerFrame3          ContainerFrame4          ContainerFrame5         
+ContainerFrame6          ContainerFrame7          ContainerFrame8          ContainerFrame9          ContainerFrame10        
+ContainerFrame11         ContainerFrame12         ContainerFrame13         MovieFrame.CloseDialog   CinematicFrameCloseDialog                         
+]===]
+
+local MissingFrames = [===[
+BattlefieldFrame         CraftFrame               OptionsFrame             PetRenamePopup           PetStable               
+ScriptErrors             SkillFrame               SoundOptionsFrame        SuggestFrame             TalentFrame             
+TalentTrainerFrame       UIOptionsFrame           UnitPopup                CosmosMasterFrame        CosmosDropDown          
+ChooseItemsFrame         ImprovedErrorFrame       TicTacToeFrame           OthelloFrame             MinesweeperFrame        
+GamesListFrame           ConnectFrame             ChessFrame               QuestShareFrame          TotemStomperFrame       
+WantAds                  DropDownList3            CosmosDropDownBis        InventoryManagerFrame    InspectPaperDollFrame   
+ContainerFrame14         ContainerFrame15         NxSocial                 ARKINV_Frame1            WardrobeFrame           
+AutoPotion_Template_Dialog                        AccountantFrame          ImmersionFrame           BagnonFrameinventory    
+GwCharacterWindow        GwCharacterWindowsMoverFrame                      FlightMapFrame           AdiBagsContainer1       
+AdiBackpack              AdiBank                  ElephantFrame            
+]===]
+
+
 ------------------------------
 -- List of interactive frames/windows that aren't registered in UIPanelWindows, UISpecialFrames, UIMenus (@see FrameXML/UIParent.lua):
 -- This list is based on Mouse-Look-Lock addon's collection with above mentioned entries filtered.

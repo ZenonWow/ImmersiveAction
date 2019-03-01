@@ -51,8 +51,10 @@ end
 
 function IA.FrameOnShow(frame)
 	Log.Frame('  IA.FrameOnShow('.. colors.show .. frame:GetName() ..'|r)')
-	-- if already visible do nothing
+	-- If already visible do nothing.
 	if  not setInsertLast(IA.WindowsOnScreen, frame)  then  return  end
+	-- If a parent is hidden, then it won't be visible.
+	if  not frame:IsVisible()  then  return  end
 
 	IA.activeCommands.ActionModeRecent = nil    -- There is a more recent event now.
 	IA:UpdateMouselook(false, 'FrameOnShow')
@@ -94,7 +96,7 @@ end
 
 function  IA:HookFrame(frameName, frame)
 	-- G[frameName] and getglobal(frameName) does not work for child frames like "MovieFrame.CloseDialog"
-	if not frame and type(frameName)=='string' then  frame = G[frameName]  or  getSubField(G, frameName)  end
+	if not frame and type(frameName)=='string' then  frame = getSubField(G, frameName)  end
 	if not frame  or  self.HookedFrames[frameName] then  return frame  end
 	-- if not frame.GetName then  print("No GetName():", frameName, frame, type(frame))  end
 	if not frame.GetName then  DBAdd('NoGetName', frameName)  end
@@ -119,7 +121,7 @@ function  IA:HookFrame(frameName, frame)
 	else  DBAdd('ErrHook', frameName)
 	end
 	
-	if  frame.IsShown and frame:IsShown()  then
+	if  frame.IsVisible and frame:IsVisible()  then
 		Log.Frame('  IA:HookUpFrames():  '.. colors.show .. frameName ..'|r is already visible')
 		setInsertLast(IA.WindowsOnScreen, frame)
 	end
@@ -155,8 +157,8 @@ function  IA:HookUpFrames()
 	end
 
 	-- Monitor UIPanelWindows{}:  main bliz windows.
-	for  frameName,frame  in  pairs(G.UIPanelWindows)  do
-		self:HookFrame(frameName, frame)
+	for  frameName,panelInfo  in  pairs(G.UIPanelWindows)  do
+		self:HookFrame(frameName)
 	end
 
 	-- Monitor UISpecialFrames[]:  some windows added by bliz FrameXML and also addons. No need to list them by name.
