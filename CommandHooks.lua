@@ -98,12 +98,12 @@ function UniqueHooks.PetMoveTo()  IA:UpdateSpellIsTargeting('PetMoveTo')  end   
 
 
 function IA:UpdateSpellIsTargeting(cmdName)
-	local cstate = self.activeCommands
+	local actives = self.activeCommands
 	local targeting = SpellIsTargeting()
-	if cstate.SpellIsTargeting == targeting then  return  end
+	if actives.SpellIsTargeting == targeting then  return  end
 
-	cstate.SpellIsTargeting = targeting
-	if targeting then  cstate.ActionModeRecent = nil  end    -- There is a more recent event now.
+	actives.SpellIsTargeting = targeting
+	if targeting then  actives.ActionModeRecent = nil  end    -- There is a more recent event now.
 	self:UpdateMouselook(false, cmdName)
 end
 
@@ -246,7 +246,7 @@ local IsModifierPressed = LibShared.Require.IsModifierPressed
 
 
 function IA:MODIFIER_STATE_CHANGED(event)
-	local cstate = self.activeCommands
+	local actives = self.activeCommands
 	local modifiers = self.db.profile.modifiers
 	local IsEnableModPressed  = IsModifierPressed[ modifiers.enableModifier ]
 	local IsDisableModPressed = IsModifierPressed[ modifiers.disableModifier ]
@@ -258,12 +258,12 @@ function IA:MODIFIER_STATE_CHANGED(event)
 	if enableModPressed and disableModPressed then  return  end
 
 	-- No change?
-	if cstate.enableModPressed == enableModPressed
-	and cstate.disableModPressed == disableModPressed
+	if actives.enableModPressed == enableModPressed
+	and actives.disableModPressed == disableModPressed
 	then  return  end
 
-	cstate.enableModPressed = enableModPressed
-	cstate.disableModPressed = disableModPressed
+	actives.enableModPressed = enableModPressed
+	actives.disableModPressed = disableModPressed
 	self:UpdateMouselook(nil, 'Modifier')
 end
 
@@ -278,18 +278,18 @@ function IA:CURSOR_UPDATE(event, ...)
 	-- event is NOT sent when hiding cursor
 	3. after/before CURRENT_SPELL_CAST_CHANGED
 	--]]
-	local cstate = self.activeCommands
-	local lastState = cstate.CursorPickup or cstate.SpellIsTargeting
-	-- cstate.CursorHasItem = CursorHasItem()
-	cstate.CursorPickup = GetCursorInfo()
-	-- cstate.CursorPickup = CursorHasItem()  or  CursorHasMacro()  or  CursorHasMoney()  or  CursorHasSpell()
-	cstate.SpellIsTargeting = SpellIsTargeting()
-	-- cstate.CursorObjectOrSpellTargeting = cstate.CursorPickup or cstate.SpellIsTargeting
-	local newState = cstate.CursorPickup or cstate.SpellIsTargeting
+	local actives = self.activeCommands
+	local lastState = actives.CursorPickup or actives.SpellIsTargeting
+	-- actives.CursorHasItem = CursorHasItem()
+	actives.CursorPickup = GetCursorInfo()
+	-- actives.CursorPickup = CursorHasItem()  or  CursorHasMacro()  or  CursorHasMoney()  or  CursorHasSpell()
+	actives.SpellIsTargeting = SpellIsTargeting()
+	-- actives.CursorObjectOrSpellTargeting = actives.CursorPickup or actives.SpellIsTargeting
+	local newState = actives.CursorPickup or actives.SpellIsTargeting
 
 	Log.Event(event, '  -> cursorAction=' .. IA.colorBoolStr(newState, false))
 	if lastState ~= newState then
-		if newState then  cstate.ActionModeRecent = nil  end    -- There is a more recent event now.
+		if newState then  actives.ActionModeRecent = nil  end    -- There is a more recent event now.
 		self:UpdateMouselook(not newState, 'CURSOR_UPDATE')
 	end
 end
