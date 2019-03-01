@@ -22,14 +22,17 @@ IA.defaultSettings = {
 		bindingsInActionMode = {},
 		bindingsInGeneral = {  -- 2019-02-28:
 			--['BUTTON1']				= "INTERACTNEAREST",
-			['BUTTON1']				= "CAMERAORSELECTORMOVE",  -- Rotate Camera (LeftButton default),
-			['BUTTON2']				= "TURNORACTION",  -- Turn or Action (RightButton default),
-			['ALT-BUTTON1']		= "MOVEANDSTEER",
-			['ALT-BUTTON2']		= "AUTORUN",
+			-- ['BUTTON1']				= "CAMERAORSELECTORMOVE",  -- Rotate Camera (LeftButton default),
+			-- ['BUTTON2']				= "TURNORACTION",  -- Turn or Action (RightButton default),
+			['ALT-BUTTON1']		= "MOVEFORWARD",
+			['ALT-BUTTON2']		= "MOVEBACKWARD",
 			['SHIFT-BUTTON1'] = "STRAFELEFT",
 			['SHIFT-BUTTON2'] = "STRAFERIGHT",
 			['CTRL-BUTTON1']	= "INTERACTNEAREST",
 			['CTRL-BUTTON2']	= "INTERACTMOUSEOVER",  -- Does INTERACTTARGET if there is nothing under the mouse (no mouseover)
+			-- ['ALT-BUTTON4']	= "AUTORUN",
+			-- ['BUTTON5']	= "AUTORUN",
+			-- ['CTRL-BUTTON4']	= "ToggleActionMode",
 			--[[
 			['BUTTON1']				= "MOVEANDSTEER",
 			['BUTTON2']				= "TURNORACTION",
@@ -179,7 +182,7 @@ end
 
 
 local optCnt = 0
-local function opt(key, name, desc, defValues)
+local function optBind(key, name, desc, defValues)
 	optCnt = optCnt + 1
 	local optInfo = {
 		name = name,
@@ -189,7 +192,7 @@ local function opt(key, name, desc, defValues)
 		--width = "full",
 		values = defValues or Config:InitCommandLabels(),
 		get = function()
-			local value = IA.db.profile.bindings[key]
+			local value = IA.db.profile.bindingsInGeneral[key]
 			return  indexOf(Config.commands, value)
 		end,
 		set = function(info, idx)
@@ -251,18 +254,24 @@ Config.optionsTable = {
 }
 
 Config.optionsTableList = { 
-	opt("BUTTON1", "Left Click", "Override original behavior of Left Mouse Button"),
-	opt("BUTTON2", "Right Click", "Override original behavior of Right Mouse Button"),
-	opt("X", "X"),
-	opt("ALT-BUTTON1", "Alt + Left Click"),
-	opt("ALT-BUTTON2", "Alt + Right Click"),
-	opt("X", "X"),
-	opt("SHIFT-BUTTON1", "Shift + Left Click"),
-	opt("SHIFT-BUTTON2", "Shift + Right Click"),
-	opt("X", "X"),
-	opt("CTRL-BUTTON1", "Control + Left Click"),
-	opt("CTRL-BUTTON2", "Control + Right Click"),
-	opt("X", "X"),
+	optBind("BUTTON1", "Left Click", "Override original behavior of Left Mouse Button"),
+	optBind("BUTTON2", "Right Click", "Override original behavior of Right Mouse Button"),
+	optBind("BUTTON3", "Wheel Click", "Clicking Mouse Wheel"),
+	optBind("ALT-BUTTON1", "Alt + Left Click"),
+	optBind("ALT-BUTTON2", "Alt + Right Click"),
+	optBind("ALT-BUTTON3", "Alt + Wheel Click"),
+	optBind("SHIFT-BUTTON1", "Shift + Left Click"),
+	optBind("SHIFT-BUTTON2", "Shift + Right Click"),
+	optBind("SHIFT-BUTTON3", "Shift + Wheel Click"),
+	optBind("CTRL-BUTTON1", "Control + Left Click"),
+	optBind("CTRL-BUTTON2", "Control + Right Click"),
+	optBind("CTRL-BUTTON3", "Control + Wheel Click"),
+	optBind("BUTTON4", "Back Click", "Navigate Back Mouse Button"),
+	optBind("BUTTON5", "Next Click", "Navigate Forward Mouse Button"),
+	optBind("X0", ""),
+	optBind("ALT-BUTTON4", "Alt + Back Click"),
+	optBind("ALT-BUTTON5", "Alt + Next Click"),
+	-- optBind("X1", ""),
 	optToggle("enabledOnLogin", "Enable on login", "Surprise your little brother/sister next time he/she logs in."),
 	optToggle("enableWithMoveKeys", "Enable while moving", "While pressing any movement key the mouse will turn the camera and your character."),
 	optToggle("enableAfterBothButtons", "Enable with both mouse buttons", "After pressing LeftButton and RightButton together:  ActionMode will stay enabled."),
@@ -271,6 +280,6 @@ Config.optionsTableList = {
 	optToggle("actionModeMoveWithCameraButton", "Move with LeftButton", "Effective in ActionMode:  You will move forward while pressing LeftButton. Try RightButton as well, and the two together (MouseCursorMode, LookAroundMode)"),
 	optMod("enableModifier", "Enable with modifier:", "While pressing this modifier the camera turns with the mouse."),
 	optMod("disableModifier", "Disable with modifier:", "While pressing this modifier the mouse cursor is free to move."),
-	--opt("smarttargeting", "Smart Targeting", "Buttons that target the closest friendly NPC and interact with it if close enough", SmartTargetValues),
+	--optBind("smarttargeting", "Smart Targeting", "Buttons that target the closest friendly NPC and interact with it if close enough", SmartTargetValues),
 }
 
