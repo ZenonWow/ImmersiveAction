@@ -5,13 +5,16 @@ local Log = IA.Log or {}  ;  IA.Log = Log
 local colorBoolStr = IA.colorBoolStr
 local colors = IA.colors
 
+local SpellIsTargeting,GetCursorInfo,GetUnitSpeed = SpellIsTargeting,GetCursorInfo,GetUnitSpeed
+
 --[[ Analyzing key press state:
 -- commands can get stuck in pressed state if the binding is changed and the "up" event goes to a different command
 /dump ImmersiveAction.db.profile.enabledOnLogin
 /dump ImmersiveAction.activeCommands, ImmersiveAction.commandGroups
 /run ImmersiveAction:ResetState()
 -- Cause of ImmersiveAction:
-/dump ImmersiveAction.db.profile.enableWithMoveKeys
+/dump ImmersiveAction.db.profile.enableWithMoveKeys, ImmersiveAction.db.profile.enableAfterBothButtons, ImmersiveAction.db.profile.enableAfterMoveAndSteer
+/dump ImmersiveAction.db.profile.disableWithLookAround, ImmersiveAction.db.profile.actionModeMoveWithCameraButton
 /dump ImmersiveAction:ExpectedMouselook()
 /dump ImmersiveAction.WindowsOnScreen
 -- Overridden bindings:
@@ -95,8 +98,9 @@ local DisablesAutoRun = {
 
 function IA:SetActionMode(enable)
 	local cstate = self.activeCommands
-	if cstate.ActionModeRecent == enable then  return  end
-	cstate.ActionModeRecent = enable
+	if not enable then  self.activeCommands.ActionModeRecent = nil  end
+
+	if cstate.ActionMode == enable then  return  end
 	cstate.ActionMode = enable
 	self.OverrideBindings:UpdateOverrides()
 end
@@ -141,7 +145,6 @@ function IA:ProcessCommand(cmdName, pressed)
 		cmdName = 'MoveAndSteer'
 	end
 
-	if pressed and cstate.AutoRun then  self:CheckAutoRun(cmdName, pressed)  end
 	cmdName = self:CheckStuckState(cmdName, pressed)
 	self:CheckActionMode(cmdName, pressed)
 
@@ -161,6 +164,8 @@ function IA:ProcessCommand(cmdName, pressed)
 
 	self:SetCommandState(cmdName, pressed)
 	Log.Command("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed)..")")
+
+	if pressed and cstate.AutoRun then  self:CheckAutoRun(cmdName, pressed)  end
 end
 
 
@@ -192,27 +197,6 @@ end
 
 
 ------------------------------
--- Check if the game disables AutoRun. By check i mean make an educated guess. Cheers for the api disaigners.
---
-function IA:CheckAutoRun(cmdName, pressed)
-	local cstate = self.activeCommands
-	-- Quite a few click/binding combos disable AutoRun. Try to detect *all* such combinations.
-	-- Ex. AutoRun + B1 + B2 -> AutoRun stops, activeCommands.AutoRun is stuck opposite of the real.
-	-- AutoRun + MoveAndSteer (out-of-combat remapped to TurnWithoutAction)
-	-- Checking GetUnitSpeed() is still there to catch any unforeseen corner cases.
-	-- Credits for the idea:  https://wow.curseforge.com/projects/mouselookhandler/pages/mouselook-while-moving-including-autorun
-	if cmdName=='CameraOrSelectOrMove' and cstate.TurnOrAction
-	or cmdName=='TurnOrAction' and cstate.CameraOrSelectOrMove
-	or DisablesAutoRun[cmdName]    -- Forward/backward movement disables AutoRun.
-	then  self:SetCommandState('AutoRun', false)
-	elseif 0 == GetUnitSpeed('player') then
-		self:SetCommandState('AutoRun', false)
-		Log.Anomaly("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed).."):  Disabled activeCommands."..colors.AutoRun.."AutoRun|r, state would have been inverted, and MoveAndSteer rebinding to TurnWithoutAction stuck.")
-	end
-end
-
-
-------------------------------
 --
 function IA:CheckActionMode(cmdName, pressed)
 	-- Update ActionMode in response to certain inputs, when
@@ -222,20 +206,39 @@ function IA:CheckActionMode(cmdName, pressed)
 			-- Turning the camera away from the direction your character looks (clicking LeftButton) will disable ActionMode.
 			-- If it stays on the first mouse movement will yank your character to the camera direction, without specific command from you.
 			-- Clicking the RightButton will still instantly turn the character to the camera direction.
-			if  cmdName=='CameraOrSelectOrMove'  and  IA.disableWithLookAround  then  IA:SetActionMode(false)  end
+			if  cmdName=='CameraOrSelectOrMove'  and  self.db.profile.disableWithLookAround  and  not SpellIsTargeting()  then  IA:SetActionMode(false)  end
 		else
 			-- After pressing MoveAndSteer:  enable ActionMode, it feels fluent to keep turning the character with the mouse, without pressing buttons.
 			-- If not, then it can be disabled in settings.
-			if  cmdName=='MoveAndSteer' and  IA.enableAfterMoveAndSteer  then  IA:SetActionMode(true)  end
+			if  cmdName=='MoveAndSteer' and  self.db.profile.enableAfterMoveAndSteer  then  IA:SetActionMode(true)  end
 			-- After pressing LeftButton and RightButton together:  ActionMode will stay enabled.
 			-- It's the same as MoveAndSteer but with two buttons. Can be enabled separately.
 			-- Rule:  one button released while the other is pressed.
-			if IA.enableAfterBothButtons then
+			if self.db.profile.enableAfterBothButtons then
 				if  cmdName=='CameraOrSelectOrMove' and self.TurnOrAction
 				or  cmdName=='TurnOrAction' and self.CameraOrSelectOrMove
 				then  IA:SetActionMode(true)  end
 			end
 		end
+	end
+end
+
+------------------------------
+-- Check if the game disables AutoRun. By check i mean make an educated guess. Cheers for the api disaigners.
+--
+function IA:CheckAutoRun(cmdName, pressed)
+	local cstate = self.activeCommands
+	-- Quite a few click/binding combos disable AutoRun. Try to detect *all* such combinations.
+	-- Ex. AutoRun + B1 + B2 -> AutoRun stops, activeCommands.AutoRun is stuck opposite of the real.
+	-- AutoRun + MoveAndSteer (out-of-combat remapped to TurnWithoutAction)
+	-- Checking GetUnitSpeed() is still there to catch any unforeseen corner cases.
+	-- Credits for the idea:  https://wow.curseforge.com/projects/mouselookhandler/pages/mouselook-while-moving-including-autorun
+	if cstate.CameraOrSelectOrMove and IA.IsMouselooking()
+	or DisablesAutoRun[cmdName]    -- Forward/backward movement disables AutoRun.
+	then  self:SetCommandState('AutoRun', false)
+	elseif 0 == GetUnitSpeed('player') then
+		self:SetCommandState('AutoRun', false)
+		Log.Anomaly("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed).."):  Disabled activeCommands."..colors.AutoRun.."AutoRun|r, state would have been inverted, and MoveAndSteer rebinding to TurnWithoutAction stuck.")
 	end
 end
 
@@ -248,7 +251,7 @@ function IA:SetCommandState(cmdName, active)
 	self.activeCommands[cmdName] = active
 
 	-- Update group state.
-	local groupName = self.commandsHooked[cmdName]
+	local groupName = self.commandGrouping[cmdName]
 	if  groupName  then  self:SetGroupCommand(groupName, cmdName, active)  end
 
 	-- Update bindings.
@@ -273,7 +276,7 @@ end
 
 function  IA:UpdateMouselook(possibleTransition, event)
 	event = event  or  'nil'
-	local currentState = not not IsMouselooking()
+	local currentState = not not IA.IsMouselooking()
 	local outsideChange = self.lastMouselook ~= currentState
 	
 	-- Report modified IsMouselooking() to catch commands changing it. Like  MoveAndSteerStart  and  TurnOrActionStart
@@ -303,18 +306,11 @@ function  IA:UpdateMouselook(possibleTransition, event)
 	
 	-- Commit the change
 	if  expState ~= currentState  then
-    if  SpellIsTargeting()  then
-			print(prefix .. suffix .. "  SpellIsTargeting():  Mouselook change might prevent casting the spell.")
-			-- TODO: remove print. Spell targeting does nothing? The improved priority order in ExpectedMouselook() might have fixed this.
-			return
-		end
 		if  expState  then  IA.MouselookStart()  else  IA.MouselookStop()  end
-		--self.lastMouselookSet = expState
 	end
 end
 
 IA.lastMouselook = not not IsMouselooking()
---IA.lastMouselookSet = false
 
 
 
@@ -344,43 +340,43 @@ function IA:ExpectedMouselook()
 	-- To move press B1 or B1+B2 (depending on actionModeMoveWithCameraButton).
 
 	-- TurnOrAction (RightButton) will _invert_ the Mouselook state active at the time it is pressed.
-	-- It takes precedence over WindowsOnScreen, SpellIsTargeting, CursorPickedUp, MoveAndSteer and modifiers (Shift/Ctrl/Alt).
+	-- It takes precedence over WindowsOnScreen, SpellIsTargeting, CursorPickup, MoveAndSteer and modifiers (Shift/Ctrl/Alt).
 	-- As long as you press the RightButton those do not matter, nor effect the behaviour.
 	-- if  nil~=cstate.TurnOrActionForcesState  then  return cstate.TurnOrActionForcesState, 'TurnOrAction'  end
 	if  cstate.TurnOrAction then  return true , 'TurnOrAction'      end
-	if  cstate.MouseCursor  then  return false, cstate.MouseCursor  end
 
 	-- In ActionMode (enables MouselookMode) the LeftButton would do MoveAndSteer instead of FreeCameraMode,
 	-- just like when both buttons are pressed. To enter FreeCameraMode we disable MouselookMode.
 	-- Except when the user requested that LeftButton moves in ActionMode.
 	-- Note: in this case pressing the RightButton _first_ will set TurnOrActionForcesState = false,
 	-- then pressing LeftButton will return `false` in the above line, and enable FreeCameraMode. Uff.
-	local freeCamera =  cstate.CameraOrSelectOrMove  and  not (cstate.ActionMode and self.db.profile.actionModeMoveWithCameraButton)
-	if  freeCamera  then  return false, 'CameraOrSelectOrMove'  end
+	local moveWithCameraButton =  cstate.CameraOrSelectOrMove  and  cstate.ActionMode  and  self.db.profile.actionModeMoveWithCameraButton
+	if  moveWithCameraButton  then  return true, 'moveWithCameraButton'  end
+	if  cstate.MouseCursor  then  return false, 'MouseCursor: '..cstate.MouseCursor  end
+	if  cstate.CameraOrSelectOrMove  then  return false, 'CameraOrSelectOrMove'  end
 
-	-- MoveAndSteer,TargetScanEnemy,TargetNearestEnemy takes precedence over WindowsOnScreen, SpellIsTargeting and CursorPickedUp.
+	-- MoveAndSteer,TargetScanEnemy,TargetNearestEnemy takes precedence over WindowsOnScreen, SpellIsTargeting and CursorPickup.
 	-- Maybe all Move,Strafe bound to mouse button should do so. In that case extra logic is needed to detect when Move is caused by a mouse button.
 	if  cstate.MouseTurn  then  return true, "MouseTurn:"..tostring(cstate.MouseTurn)  end		-- 'TurnWithoutInteract, MoveAndSteer, ScanEnemy' , addons using MouselookStart()  end
 
 	if  cstate.enableModPressed   then  return true,  'enableModPressed'   end
 	if  cstate.disableModPressed  then  return false, 'disableModPressed'  end
 
-	-- Any new event: SpellIsTargeting, CursorPickedUp, new WindowsOnScreen will delete ActionModeRecent.
-	if  nil~=cstate.ActionModeRecent  then  return cstate.ActionModeRecent, 'ActionModeRecent'  end
+	-- Any new event: SpellIsTargeting, CursorPickup, new WindowsOnScreen will delete ActionModeRecent.
+	if  cstate.ActionModeRecent  then  return true, 'ActionModeRecent'  end
 
 	-- Cursor actions:
-	if  cstate.SpellIsTargeting	then  return false, 'SpellIsTargeting'  end
-	if  cstate.CursorPickedUp		then  return false, 'CursorPickedUp'    end
-	--if  cstate.CursorObjectOrSpellTargeting  then  return false, 'CursorObjectOrSpellTargeting'  end
+	if  SpellIsTargeting()	then  return false, 'SpellIsTargeting'  end
+	if  GetCursorInfo()		  then  return false, 'CursorPickup'      end
 
 	-- WindowsOnScreen are higher priority than  enableWithMoveKeys:Move,Strafe.
 	-- if  self:AnyFramesOnScreen()  then  return false, 'WindowsOnScreen'  end
 	local frame = IA:AnyFramesOnScreen()
-	if  frame  then  return false, 'WindowsOnScreen:'..tostring(frame.GetName and frame:GetName() or frame)  end
+	if  frame  then  return false, 'WindowsOnScreen: '..tostring(frame.GetName and frame:GetName() or frame)  end
 
 	-- Move,Strafe commands enable if enableWithMoveKeys and no WindowsOnScreen.
 	if  self.db.profile.enableWithMoveKeys  and  cstate.MoveKeys  then
-		return true, "enableWithMoveKeys:"..cstate.MoveKeys
+		return true, "enableWithMoveKeys: "..cstate.MoveKeys
 	end
 
 	-- Lowest priority as a static setting:  ActionMode.

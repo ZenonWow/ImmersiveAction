@@ -37,7 +37,8 @@ IA.commandsHooked = {
 	PitchUp				= 'Pitch',
 	PitchDown			= 'Pitch',
 
-	CameraOrSelectOrMove = 'MouseCursor',  -- Solo
+	CameraOrSelectOrMove = 'MouseCursor',
+	CameraOrSelectOrMove = false,
 	TurnOrAction	= 'MouseTurn',
 	-- TurnOrAction	= false,            -- Custom: sets Mouselook to inverse of lastMouselook.
 
@@ -92,9 +93,25 @@ local UniqueHooks = {}
 function UniqueHooks.ToggleAutoRun()  IA:SetCommandState('AutoRun', not IA.activeCommands.AutoRun)  end
 function UniqueHooks.StartAutoRun()  IA:SetCommandState('AutoRun', true)  end
 function UniqueHooks.StopAutoRun()  IA:SetCommandState('AutoRun', false)  end
+function UniqueHooks.PetMoveTo()  IA:UpdateSpellIsTargeting('PetMoveTo')  end    -- Pet move targeting.
+-- function UniqueHooks.UseAction()  IA:UpdateSpellIsTargeting('UseAction')  end    -- Possible ground targeting spell.
+
+
+function IA:UpdateSpellIsTargeting(cmdName)
+	local cstate = self.activeCommands
+	local targeting = SpellIsTargeting()
+	if cstate.SpellIsTargeting == targeting then  return  end
+
+	cstate.SpellIsTargeting = targeting
+	if targeting then  cstate.ActionModeRecent = nil  end    -- There is a more recent event now.
+	self:UpdateMouselook(false, cmdName)
+end
 
 
 function IA:CommandHook(cmdName, pressed, event)
+	-- Update SpellIsTargeting after pressing or releasing LeftButton.
+	if cmdName == 'CameraOrSelectOrMove' then  self.activeCommands.SpellIsTargeting = SpellIsTargeting()  end
+
 	self:ProcessCommand(cmdName, pressed)
 	-- if self.commandsHooked[cmdName]=='MouseTurn' then  possibleTransition = pressed  else  possibleTransition = not pressed  end
 	-- Do MouselookStart/Stop as necessary
@@ -171,6 +188,7 @@ function IA:ToggleActionMode(toState)
 	-- local inverseState = not self:ExpectedMouselook()
 	-- local inverseState = not self.activeCommands.ActionMode
 	
+	self.activeCommands.ActionModeRecent = toState or nil
 	self:SetActionMode(toState)
 	self:UpdateMouselook(toState, 'ToggleActionMode')
 end
@@ -206,6 +224,7 @@ end
 function IA:RegisterCommandEvents(enable)
 	if enable ~= false then
 		self:RegisterEvent('MODIFIER_STATE_CHANGED')
+		self:RegisterEvent('CURRENT_SPELL_CAST_CHANGED')
 		self:RegisterEvent('CURSOR_UPDATE')
 		-- self:RegisterEvent('PET_BAR_UPDATE')
 		-- self:RegisterEvent('ACTIONBAR_UPDATE_STATE')
@@ -213,6 +232,7 @@ function IA:RegisterCommandEvents(enable)
 		self:RegisterEvent('PLAYER_STOPPED_MOVING')
 	else
 		self:UnregisterEvent('MODIFIER_STATE_CHANGED')
+		self:UnregisterEvent('CURRENT_SPELL_CAST_CHANGED')
 		self:UnregisterEvent('CURSOR_UPDATE')
 		-- self:UnregisterEvent('PET_BAR_UPDATE')
 		-- self:UnregisterEvent('ACTIONBAR_UPDATE_STATE')
@@ -222,24 +242,28 @@ function IA:RegisterCommandEvents(enable)
 end
 
 
-local isModifierPressedFunc = {
-	SHIFT = IsShiftKeyPressed,
-	CTRL = IsCtrlKeyPressed,
-	ALT = IsAltKeyPressed,
-}
+local IsModifierPressed = LibShared.Require.IsModifierPressed
 
 
 function IA:MODIFIER_STATE_CHANGED(event)
-	local modifiers = self.db.profile.modifiers
-	local IsEnableModPressed  = isModifierPressedFunc[ modifiers.enableModifier ]
-	local IsDisableModPressed = isModifierPressedFunc[ modifiers.disableModifier ]
 	local cstate = self.activeCommands
-	cstate.enableModPressed  = IsEnableModPressed  and IsEnableModPressed ()
-	cstate.disableModPressed = IsDisableModPressed and IsDisableModPressed()
-	if cstate.enableModPressed and cstate.disableModPressed then
-		-- Both pressed disables both.
-		cstate.enableModPressed, cstate.disableModPressed  =  nil,nil
-	end
+	local modifiers = self.db.profile.modifiers
+	local IsEnableModPressed  = IsModifierPressed[ modifiers.enableModifier ]
+	local IsDisableModPressed = IsModifierPressed[ modifiers.disableModifier ]
+
+	local enableModPressed  = IsEnableModPressed  and IsEnableModPressed ()
+	local disableModPressed = IsDisableModPressed and IsDisableModPressed()
+
+	-- Both pressed in order mod1 + mod2 will keep the state of mod1 and ignore mod2. In short: do nothing when mod2 is pressed.
+	if enableModPressed and disableModPressed then  return  end
+
+	-- No change?
+	if cstate.enableModPressed == enableModPressed
+	and cstate.disableModPressed == disableModPressed
+	then  return  end
+
+	cstate.enableModPressed = enableModPressed
+	cstate.disableModPressed = disableModPressed
 	self:UpdateMouselook(nil, 'Modifier')
 end
 
@@ -255,25 +279,27 @@ function IA:CURSOR_UPDATE(event, ...)
 	3. after/before CURRENT_SPELL_CAST_CHANGED
 	--]]
 	local cstate = self.activeCommands
-	local lastState = cstate.CursorObjectOrSpellTargeting
+	local lastState = cstate.CursorPickup or cstate.SpellIsTargeting
 	-- cstate.CursorHasItem = CursorHasItem()
-	cstate.CursorPickedUp = GetCursorInfo()
-	-- cstate.CursorPickedUp = CursorHasItem()  or  CursorHasMacro()  or  CursorHasMoney()  or  CursorHasSpell()
+	cstate.CursorPickup = GetCursorInfo()
+	-- cstate.CursorPickup = CursorHasItem()  or  CursorHasMacro()  or  CursorHasMoney()  or  CursorHasSpell()
 	cstate.SpellIsTargeting = SpellIsTargeting()
-	cstate.CursorObjectOrSpellTargeting = cstate.CursorPickedUp or cstate.SpellIsTargeting
+	-- cstate.CursorObjectOrSpellTargeting = cstate.CursorPickup or cstate.SpellIsTargeting
+	local newState = cstate.CursorPickup or cstate.SpellIsTargeting
 
-	Log.Event(event, '  -> cursorAction=' .. IA.colorBoolStr(cstate.CursorObjectOrSpellTargeting, false))
-	if not lastState ~= not cstate.CursorObjectOrSpellTargeting then
-		cstate.ActionModeRecent = nil    -- There is a more recent event now.
-		self:UpdateMouselook(not cstate.CursorObjectOrSpellTargeting, 'CURSOR_UPDATE')
+	Log.Event(event, '  -> cursorAction=' .. IA.colorBoolStr(newState, false))
+	if lastState ~= newState then
+		if newState then  cstate.ActionModeRecent = nil  end    -- There is a more recent event now.
+		self:UpdateMouselook(not newState, 'CURSOR_UPDATE')
 	end
 end
 
 
+IA.CURRENT_SPELL_CAST_CHANGED = IA.UpdateSpellIsTargeting
+
+
 --[[
--- ranged spell targeting starts/ends
-function IA:CURRENT_SPELL_CAST_CHANGED()
-	-- start:
+-- Events when ranged spell targeting starts:
 	--CURSOR_UPDATE
 	--CURRENT_SPELL_CAST_CHANGED
 	--CURSOR_UPDATE
@@ -281,18 +307,12 @@ function IA:CURRENT_SPELL_CAST_CHANGED()
 	-- + CURSOR_UPDATE
 	-- + CURSOR_UPDATE
 	
-	-- end:
+-- Events when ranged spell targeting ends:
 	--UNIT_SPELL_CAST_FAILED_QUIET
 	--UNIT_SPELL_CAST_FAILED_QUIET
 	--CURSOR_UPDATE
 	--CURRENT_SPELL_CAST_CHANGED
 	--ACTIONBAR_UPDATE_STATE
-	
-	-- additional:
-	--PLAYER_STARTED_MOVING
-	--PLAYER_STOPPED_MOVING
-	--MODIFIER_STATE_CHANGED
-end
 --]]
 
 --[[ No need for these to my best knowledge. CURSOR_UPDATE handles it.
