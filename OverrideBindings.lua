@@ -3,7 +3,7 @@ local IA = G.ImmersiveAction or {}  ;  G.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 
 -- Used from LibShared:
-local ipairsOrOne,packOrOne,pairsOrNil = LibShared:Import('ipairsOrOne,packOrOne,pairsOrNil,', IA)
+local ipairsOrOne,packOrOne,pairsOrNil = LibShared:Import('ipairsOrOne,packOrOne,pairsOrNil', IA)
 
 
 
@@ -30,7 +30,7 @@ OverridesIn.General.MOVEANDSTEER = 'MOVEFORWARD'
 OverridesIn.AutoRun.MOVEANDSTEER = 'TURNORACTION'         -- Note: override the General override.
 -- OverridesIn.AutoRun.TURNORACTION = 'TurnWithoutInteract'    -- This is not priority.
 OverridesIn.AutoRun.AUTORUN = 'TurnWithoutInteract'
-OverridesIn.MoveAndSteer.TURNORACTION = 'AUTORUN'         -- MoveAndSteer + RightButton -> AutoRun
+-- OverridesIn.MoveAndSteer.TURNORACTION = 'AUTORUN'         -- MoveAndSteer + RightButton -> AutoRun not working. AUTORUN does nothing on B1,B2
 OverridesIn.ActionMode.TURNORACTION = 'ReleaseCursor'     -- This is the priority.
 -- OverridesIn.ActionMode.CAMERAORSELECTORMOVE = 'MOVEFORWARD'    -- This is user setting.
 -- Or override with MoveForward in ActionMode, but that's no help out of ActionMode.
@@ -69,22 +69,22 @@ UserBindings:Hide()
 UserBindings.cmdKeyMaps = {}
 
 
-function UserBindings:SetUserBinding(mode, key, command)
-	IA.db.profile['bindingsIn'..mode][key] = value
-	self:OverrideOneBinding(mode, key, command)
+function UserBindings:SetUserBinding(mode, key, toCmd)
+	IA.db.profile['bindingsIn'..mode][key] = toCmd
+	self:OverrideOneBinding(mode, key, toCmd)
 end
 
 
-function UserBindings:OverrideOneBinding(mode, newKey, command)
-	if newKey=='' then  newKey = nil  end
+function UserBindings:OverrideOneBinding(mode, key, toCmd)
+	if key=='' then  key = nil  end
 
 	local cmdKeyMap = self.cmdKeyMaps[mode]
 	if not cmdKeyMap then  cmdKeyMap = {} ; self.cmdKeyMaps[mode] = cmdKeyMap  end
 
 	local oldKey = cmdKeyMap[toCmd]
 	if oldKey then  SetOverrideBinding(self, false, oldKey, nil)  end
-	cmdKeyMap[toCmd] = newKey
-	SetOverrideBinding(self, false, newKey, toCmd)
+	cmdKeyMap[toCmd] = key
+	SetOverrideBinding(self, false, key, toCmd)
 end
 
 
@@ -96,13 +96,13 @@ function UserBindings:OverrideBindings(mode, keyBindings)
 	if not cmdKeyMap then  cmdKeyMap = {} ; self.cmdKeyMaps[mode] = cmdKeyMap  end
 
 	-- Set new overrides
-	for newKey,toCmd in pairs(keyBindings) do  if toCmd~='' then
-		if newKey=='' then  newKey = nil  end
+	for key,toCmd in pairs(keyBindings) do  if toCmd~='' then
+		if key=='' then  key = nil  end
 		local oldKey = cmdKeyMap[toCmd]
-		-- LibShared.softassertf(not oldKey or oldKey==newKey, "UserBindings:OverrideBindings(): command %s already registered, overwriting:  %s  ->  %s", toCmd, oldKey, newKey)
-		cmdKeyMap[toCmd] = newKey
-		print("UserBindings: SetOverrideBinding(.., "..newKey..", "..tostring(toCmd))
-		SetOverrideBinding(self, false, newKey, toCmd)
+		-- LibShared.softassertf(not oldKey or oldKey==key, "UserBindings:OverrideBindings(): command %s already registered, overwriting:  %s  ->  %s", toCmd, oldKey, key)
+		cmdKeyMap[toCmd] = key
+		-- print("UserBindings:, key, "   ==>   ", toCmd)
+		SetOverrideBinding(self, false, key, toCmd)
 	end end -- for for
 end
 
@@ -117,16 +117,14 @@ function UserBindings:UpdateUserBindings()
 	print("UserBindings:UpdateUserBindings()")
 	-- First happens in response to ADDON_LOADED. Later on ProfileChanged()  and  when a binding is changed in Config.
 	--[[
-	MouselookStop() won't interrupt command keys that are pressed, i.e. received "down" event, but not "up"
+	MouselookStop() won't release command keys that are pressed, i.e. received "down" event, but not "up".
 	Those commands will not run for the "up" event if their binding is changed, instead
 	the new binding will receive the "up" event without a "down" event.
-	This results in unexpectedly entering or leaving ImmersiveAction when rebinding a command that changes ImmersiveAction.
+	This results in unexpectedly entering or leaving MouselookMode when rebinding a command that changes Mouselook.
 	--]]
 	local wasMouselooking = IA.IsMouselooking()
 	if wasMouselooking then
-		-- Log.Anomaly('UserBindings:UpdateUserBindings() while IsMouselooking() could cause stuck keys, not updating bindings.')
-		-- return
-		Log.Anomaly('UserBindings:UpdateUserBindings() while IsMouselooking() could cause stuck keys, temporarily disabling Mouselook.')
+		-- Log.Anomaly('UserBindings:UpdateUserBindings() while IsMouselooking() could cause stuck keys, temporarily disabling Mouselook.')
 		IA.MouselookStop()
 	end
 
@@ -239,15 +237,15 @@ end
 
 function OverrideBindings:UpdateOverrides(enable)
 	if InCombatLockdown() then
-		Log.State("ImmersiveAction:UpdateOverrides() ignored:  Can't update bindings when InCombatLockdown()")
+		Log.State("OverrideBindings:UpdateOverrides() ignored:  Can't update bindings when InCombatLockdown()")
 	else
-		print("ImmersiveAction:UpdateOverrides("..IA.colorBoolStr(enable, true)..")")
+		print("OverrideBindings:UpdateOverrides("..IA.colorBoolStr(enable, true)..")")
 		if enable==nil then  enable = true  end
+		IA.UserBindings:UpdateUserBindings()
 		if enable then  self:OverrideCommandsIn('General'   , enable)  end
 		self:OverrideCommandsIn('AutoRun'   , enable)
 		self:OverrideCommandsIn('MoveAndSteer', enable)
 		self:OverrideCommandsIn('ActionMode', enable)
-		IA.UserBindings:UpdateUserBindings()
 	end
 end
 
@@ -324,27 +322,7 @@ end
 
 
 
-LibShared.MapButtonToKey = LibShared.MapButtonToKey  or  setmetatable({
-	-- Necessary special cases:
-	LeftButton   = 'BUTTON1',
-	RightButton  = 'BUTTON2',
-	MiddleButton = 'BUTTON3',
-	-- Common:
-	Button4 = 'BUTTON4',
-	Button5 = 'BUTTON5',
-	-- 8 fields are preallocated, these are free in terms of memory:
-	-- BUTTON6 = 'Button6',
-	-- BUTTON7 = 'Button7',
-	-- BUTTON8 = 'Button8',
-},{
-	__index = function(self, Button)  return 'BUTTON'..Button:sub(7)  end
-	-- __index = function(self, Button)  return Button:upper()  end
-})
-
-local MapButtonToKey = LibShared.MapButtonToKey
--- for i=4,8 do  MapButtonToKey['Button'..i] = 'BUTTON'..i  end
--- for i=4,16 do  MapButtonToKey['Button'..i] = 'BUTTON'..i  end
--- for i=4,31 do  MapButtonToKey['Button'..i] = 'BUTTON'..i  end
+local MapButtonToKey = LibShared.Require.MapButtonToKey
 
 
 
@@ -385,6 +363,56 @@ WorldClickHandler.originalS = { [WorldFrame] = {}, [UIParent] = {} }
 WorldClickHandler.hookedS   = { [WorldFrame] = {}, [UIParent] = {} }
 
 
+local function UnhookM(self, target, methodName)
+	if self.hookedM[target][methodName] == target[methodName] then
+		target[methodName] = self.originalM[target][methodName]
+		self.hookedM[target][methodName] = nil
+		return true
+	end
+	return false
+end
+
+local function HookM(self, target, methodName, postFunc)
+	if not postFunc then  return UnhookM(self, target, methodName)  end
+	if self.hookedM[target][methodName] then  return false  end
+	self.originalM[target][methodName] = target[methodName]
+	G.hooksecurefunc(target, methodName, postFunc)
+	self.hookedM[target][methodName] = target[methodName]
+	return true
+end
+
+
+local function UnhookS(self, target, scriptName)
+	if self.hookedS[target][scriptName] == target:GetScript(scriptName) then
+		target:SetScript(scriptName, self.originalS[target][scriptName])
+		self.hookedS[target][scriptName] = nil
+		return true
+	end
+	return false
+end
+
+local function HookS(self, target, scriptName, postFunc)
+	-- print('HookS', target, scriptName, not not postFunc)
+	if not postFunc then  return UnhookS(self, target, scriptName)  end
+	if self.hookedS[target][scriptName] then  return false  end
+	self.originalS[target][scriptName] = target:GetScript(scriptName)
+	target:HookScript(scriptName, postFunc)
+	self.hookedS[target][scriptName] = target:GetScript(scriptName)
+	return true
+end
+
+
+local function WrapScript(frame, scriptName, handler, pre, post)
+	local OnMouseWheel = frame:GetScript('OnMouseWheel')
+	frame:SetScript('OnMouseWheel', frame:GetScript(scriptName))
+	SecureHandlerWrapScript(frame, 'OnMouseWheel', handler, pre, post)
+	frame:SetScript(scriptName, frame:GetScript('OnMouseWheel'))
+	frame:SetScript('OnMouseWheel', OnMouseWheel)
+end
+
+
+
+
 function WorldClickHandler.SetScript(frame, scriptName, callback)
 	LibShared.softassert(false, frame:GetName().."."..scriptName.."  SetScript-ed to next error:")
 	-- Without frame argument it is bound to crash on nil, if it's not a dummy.
@@ -398,13 +426,23 @@ function WorldClickHandler.HookScript(frame, scriptName, postFunc)
 end
 
 
+
+
+function WorldClickHandler.OnMouseWheel(frame, direction)
+	local self = WorldClickHandler
+	print(frame, IA.coloredKey('MouseWheel', direction < 0))
+end
+
 function WorldClickHandler.UIOnMouseDown(frame, button)
+	local self = WorldClickHandler
 	print("UIParent", IA.coloredKey(button, true))
 end
 
 function WorldClickHandler.UIOnMouseUp(frame, button)
+	local self = WorldClickHandler
 	print("UIParent", IA.coloredKey(button, false))
 end
+
 
 
 function WorldClickHandler.OnMouseDown(frame, button)
@@ -417,6 +455,16 @@ function WorldClickHandler.OnMouseDown(frame, button)
 	print("        ", self.counter, frame:GetName(), IA.coloredKey(button, true))
 
 	if self.prevClickToMove then  SetCVar("AutoInteract", self.prevClickToMove) ; self.prevClickToMove = nil  end
+	
+	local key = MapButtonToKey[button]
+	-- Test AUTORUN override.
+	-- if key == 'BUTTON1' then  SetOverrideBinding(self, true, 'BUTTON4', 'AUTORUN')  end
+
+	-- Cast the spell on LeftButton even if ActionMode was turned on after starting spell targeting.
+	if key == self.BUTTONs.CAMERAORSELECTORMOVE and G.SpellIsTargeting() and IA.IsMouselooking() then
+		IA.MouselookStop()
+		IA.lastMouselook = false
+	end
 end
 
 
@@ -428,6 +476,7 @@ function WorldClickHandler.OnMouseUp(frame, button)
 	-- if button == 'RightButton' then
 		WorldClickHandler.FixRightClick(frame, button)
 	end
+	-- if key == 'BUTTON1' then  SetOverrideBinding(self, true, 'BUTTON4', nil)  end
 end
 
 
@@ -450,7 +499,7 @@ end
 
 
 WorldClickHandler.PreventAllSingleClicks = false
-WorldClickHandler.RunToDoubleClickGround = true
+-- WorldClickHandler.RunToDoubleClickGround = true
 WorldClickHandler.RunToDoubleClickMouseover = true
 
 function WorldClickHandler:FixAccidentalRightClick(frame, button)
@@ -486,206 +535,11 @@ end
 
 
 
--------------------------------
--- Experiment: SecureHandler hooking WorldFrame to capture mouse button commands.
--- Result:  WorldFrame has no OnClick handler (not a Button), and SecureHandlerClickTemplate don't support OnMouseDown/OnMouseUp handlers.
--- Trying SecureHandlerMouseUpDownTemplate.
--------------------------------
-
----------- Ctrl+LeftClick UP:  what is Ctrl-B1-UP stickycamera??
----------- CameraOrSelectOrMoveStop(IsModifiedClick("STICKYCAMERA"));
-
-
--- Secure wrapper function WorldFrame_OnMouseDown_PreSnippet(self, button)
--- If CameraButton (LeftButton) is pressed then rebinds TurnBUTTON (BUTTON2) to AUTORUN.
--- In the secure environment:  owner == WorldClickHandler, self == WorldFrame  and  control == owner, i guess, but no code or documentation confirms.
-local WorldFrame_OnMouseDown_PreSnippet = [===[
-	print(" WorldFrame_OnMouseDown_PreSnippet("..button..") ")
-	local key = MapButtonToKey[button]
-	Pressed[#Pressed+1] = key
-	Pressed[key] = #Pressed
-
-	if Rebound[key] then  return  end
-	if  key == BUTTONs.TURNORACTION  and  Pressed[BUTTONs.CAMERAORSELECTORMOVE]  then
-		Rebound[key] = 'AUTORUN'
-		owner:SetBinding(true, key, 'AUTORUN')
-	end
-end
-]===]
-
-
--- Credits for coming up with a solution to the accidental rightclick go to:
--- Maunotavast-Zenedar    https://worldofwarcraft.com/en-gb/character/zenedar/Maunotavast
--- SuppressRightClick addon    https://wow.curseforge.com/projects/src
--- tynstar9    https://wow.curseforge.com/members/tynstar9    jens dot b at web dot de
--- Urzulan     https://wow.curseforge.com/members/Urzulan
---
--- This combines version 0.2 where rightclick is disabled only over mouseover units - so game objects can be clicked - with:  RegisterStateDriver(.., "[@mouseover,exists]1;0")
--- And version 0.3 where a second click in DoubleClickDuration allows the rightclick to go through and interact, independent of mouseover.
--- Also prevents accidental pulls out-of-combat by always disabling single-click RightButton.
--- To interact:  press Ctrl-RightButton - configurable with:  SetModifiedClick('Interact', 'ALT')  or  'SHIFT'  or  'CTRL-SHIFT'  or so.
--- Or bind a dedicated button to INTERACTMOUSEOVER:  SetBinding('INTERACTMOUSEOVER', 'CTRL-BUTTON2')
--- Or doubleclick. Spamming rightclick is also possible: every consecutive click within 0.3 seconds goes through. No clicks are skipped every 0.3 seconds.
---
--- How it works:
--- If TurnButton (RightButton) is released over a unit (mouseover) then
--- v0.2:  Rebinds TurnBUTTON (BUTTON2) to TurnWithoutInteract, avoiding the Interact action.
--- This happens before the MouseDown event is mapped to the standard TurnOrAction command. Post-release the hijack is disabled.
--- v0.3:  Simply calls MouselookStop() - an independent aspect in concept, but it tracks the pressed state of TurnOrAction.
--- Turning it off makes wow think the button was not pressed, and the release event is just a phantom signal.
--- Curious thing is the HookScript runs after the builtin OnMouseUp handler, so what comes even later that actually handles the key release?
--- v4:  Test if simply consuming the MouseDown event with `return false` is sufficient to fix this issue.
--- MouselookStop() is still necessary, otherwise it gets stuck. UpdateMouselook() can do it, but the trigger of
--- TurnOrActionStop() is also eliminated, confusing the StateHandler ExpectedMouselook(). Can be replace with  IA:CommandHook('TurnOrAction', false, 'TurnOrActionStop')
--- Verdict:  MouselookStop() is more compatible with hooking TurnOrActionStop().
--- This implementation uses the MouselookStop() method. Will work, until bliz fixes the design flaw of TurnOrActionStop(), present since 2004.
---
--- Secure wrapper function WorldFrame_OnMouseUp_PreSnippet(self, button)
-local WorldFrame_OnMouseUp_PreSnippet = [===[
-	print(" WorldFrame_OnMouseUp_PreSnippet("..button..") ")
-	local key = MapButtonToKey[button]
-	
-	-- Mark key released in Pre snippet:  UP event handlers will see the state as released.
-	local index = Pressed[key]
-	Pressed[key] = nil
-	Pressed[index] = false
-	
-	-- Clear released keys from the end of the list until found a pressed key.
-	if index == #Pressed then  while Pressed[index]==false  do
-		Pressed[index] = nil
-		index = index - 1
-	end end -- if while
-
-	if  key == BUTTONs.TURNORACTION  and  not Rebound[key]  and  not IsModifiedClick('Interact')  then
-		local now, last = owner:GetTime(), LastTurnClick
-		LastTurnClick = now
-		if DoubleClickInterval < now-last then
-			-- Rebound[key] = 'TurnWithoutInteract'
-			-- owner:SetBinding(false, key, 'TurnWithoutInteract')
-			owner:CallMethod('MouselookStop')    -- Hack TurnOrActionStop() into believing it was not pressed.
-			-- return false
-		end
-	end
-	return nil, true  -- Don't change button, do invoke post-handler.
-]===]
--- LastTurnClick is updated for doubleclicks too, so as long as the user lands clicks in 0.3 sec, all clicks will Interact.
--- Spamming clicks still works, but a single click is prevented from an accidental pull or targeting.
-
-
--- Secure wrapper function WorldFrame_OnMouseUp_PostSnippet(self, message, button)
-local WorldFrame_OnMouseUp_PostSnippet = [===[
-	print(" WorldFrame_OnMouseUp_PostSnippet("..button..") ")
-
-	local key = MapButtonToKey[button]
-	if Rebound[key] then
-		Rebound[key] = nil
-		owner:ClearBinding(key)
-	end
-]===]
-
-
-
--- Secure wrapper function UIParent_OnMouseWheel_PreSnippet(self, offset)
-local UIParent_OnMouseWheel_PreSnippet = [===[
-	-- print(" UIParent_OnMouseWheel_PreSnippet("..self:GetName(self)..", offset="..tostring(offset)..") ")
-	return nil, true  -- Allow original handler, then invoke post-handler.
-]===]
-
-
-
--- Secure wrapper function UIParent_OnMouseWheel_PostSnippet(self, message, offset)
-local UIParent_OnMouseWheel_PostSnippet = [===[
-	print(" UIParent_OnMouseWheel_PostSnippet("..self:GetName()..", offset="..tostring(offset)..") ")
-]===]
-
-
-
-WorldClickHandler.InitSnippet = [===[
-	-- I will definitely forget to initialize this:
-	LastTurnClick, DoubleClickInterval = 0, 0.3
-	Pressed = newtable()
-	Rebound = newtable()
-	-- BUTTONs = newtable()
-
-	MapButtonToKey = newtable()
-	MapButtonToKey.LeftButton = BUTTON1
-	MapButtonToKey.RightButton = BUTTON2
-	MapButtonToKey.MiddleButton = BUTTON3
-	for i=4,31 do  MapButtonToKey['Button'..i] = 'BUTTON'..i  end
-]===]
-
-
-local function WrapScript(frame, scriptName, handler, pre, post)
-	local OnMouseWheel = frame:GetScript('OnMouseWheel')
-	frame:SetScript('OnMouseWheel', frame:GetScript(scriptName))
-	SecureHandlerWrapScript(frame, 'OnMouseWheel', handler, pre, post)
-	frame:SetScript(scriptName, frame:GetScript('OnMouseWheel'))
-	frame:SetScript('OnMouseWheel', OnMouseWheel)
-end
-
-
-
-local function UnhookM(self, target, methodName)
-	if self.hookedM[target][methodName] == target[methodName] then
-		target[methodName] = self.originalM[target][methodName]
-		self.hookedM[target][methodName] = nil
-		return true
-	end
-	return false
-end
-
-local function UnhookS(self, target, scriptName)
-	if self.hookedS[target][scriptName] == target:GetScript(scriptName) then
-		target:SetScript(scriptName, self.originalS[target][scriptName])
-		self.hookedS[target][scriptName] = nil
-		return true
-	end
-	return false
-end
-
-
-local function HookM(self, target, methodName, postFunc)
-	if not postFunc then  return UnhookM(self, target, methodName)  end
-	if self.hookedM[target][methodName] then  return false  end
-	self.originalM[target][methodName] = target[methodName]
-	G.hooksecurefunc(target, methodName, postFunc)
-	self.hookedM[target][methodName] = target[methodName]
-	return true
-end
-
-local function HookS(self, target, scriptName, postFunc)
-	if not postFunc then  return UnhookS(self, target, scriptName)  end
-	if self.hookedS[target][scriptName] then  return false  end
-	self.originalS[target][scriptName] = target:GetScript(scriptName)
-	target:HookScript(scriptName, postFunc)
-	self.hookedS[target][scriptName] = target:GetScript(scriptName)
-	return true
-end
-
-
-function WorldClickHandler:InitSecureHandler()
-	local handler = self    -- For clarity.
-	-- Init "global" variables in secure environment.
-	-- handler:SetAttribute('_set', " local name,value=... ; _G[name] = value ")
-
-	-- handler.MouselookStop = IA.MouselookStop
-	handler:Execute(WorldClickHandler.InitSnippet)
-	handler.Env = G.GetManagedEnvironment(handler)
-
-	-- handler:WrapScript(WorldFrame, 'OnMouseDown', prePressBody, nil)
-	-- handler:WrapScript(WorldFrame, 'OnMouseUp'  , preReleaseBody, postReleaseBody)
-	-- Same with less calls:
-	-- SecureHandlerWrapScript(WorldFrame, 'OnMouseDown', handler, WorldFrame_OnMouseDown_PreSnippet, nil)
-	-- SecureHandlerWrapScript(WorldFrame, 'OnMouseUp'  , handler, WorldFrame_OnMouseUp_PreSnippet, WorldFrame_OnMouseUp_PostSnippet)
-
-	-- WrapScript(WorldFrame, 'OnMouseDown', handler, WorldFrame_OnMouseDown_PreSnippet, nil)
-	-- WrapScript(WorldFrame, 'OnMouseUp', handler, WorldFrame_OnMouseUp_PreSnippet, WorldFrame_OnMouseUp_PostSnippet)
-
-	-- SecureHandlerWrapScript(WorldFrame, 'OnClick', handler, WorldFrame_OnClick_PreSnippet, WorldFrame_OnClick_PostSnippet)
-	-- WorldFrame has no OnClick script... splendid.
+function WorldClickHandler:InitInsecureHooks()
   -- OnMouseDown/OnMouseUp cannot be wrapped, therefore altered by a third-party.
 	-- Only insecure, post-handler is possible with HookScript('OnMouseDown'). This cannot alter bindings in combat.
-	if not self.hookedS[WorldFrame].OnMouseUp then
+	if self.hookedS[WorldFrame].OnMouseUp then  return  end
+	do
 		HookS(self, WorldFrame, 'OnMouseWheel', self.OnMouseWheel)
 		HookS(self, UIParent  , 'OnMouseWheel', self.OnMouseWheel)
 
@@ -699,21 +553,10 @@ function WorldClickHandler:InitSecureHandler()
 		HookM(self, UIParent  , 'HookScript' , self.HookScript )
 		HookM(self, UIParent  , 'HookScript' , self.HookScript )
 	end
-
-	-- SecureHandlerWrapScript(WorldFrame, 'OnMouseWheel', handler, UIParent_OnMouseWheel_PreSnippet, UIParent_OnMouseWheel_PostSnippet)
-	-- SecureHandlerWrapScript(UIParent, 'OnMouseWheel', handler, UIParent_OnMouseWheel_PreSnippet, UIParent_OnMouseWheel_PostSnippet)
-	
-	handler:UpdateDoubleClickInterval()
-	handler:UpdateOverrideBindings()
 end
 
 
-function WorldClickHandler:DisableHandler()
-	-- self:UnwrapScript(WorldFrame, 'OnMouseDown')
-	-- self:UnwrapScript(WorldFrame, 'OnMouseUp')
-	self:UnwrapScript(WorldFrame, 'OnMouseWheel')
-	self:UnwrapScript(UIParent  , 'OnMouseWheel')
-
+function WorldClickHandler:DisableInsecureHooks()
 	HookS(self, WorldFrame, 'OnMouseWheel', false)
 	HookS(self, UIParent  , 'OnMouseWheel', false)
 
@@ -729,11 +572,6 @@ function WorldClickHandler:DisableHandler()
 end
 
 
-function WorldClickHandler:UpdateDoubleClickInterval()
-	self:Execute(" DoubleClickInterval = "..(IA.db.profile.DoubleClickInterval or 0.3) )
-end
-
-
 function WorldClickHandler:UpdateOverrideBindings()
 	-- local CameraBUTTON,TurnBUTTON = 'BUTTON1','BUTTON2'    --'LeftButton','RightButton'
 	-- Only the first binding is handled of each command. It cannot be rebound on the UI,so if a user binds more keys to it, definitely knows what he/she is doing.
@@ -741,41 +579,36 @@ function WorldClickHandler:UpdateOverrideBindings()
 	WorldClickHandler.BUTTONs = BUTTONs
 	BUTTONs.CAMERAORSELECTORMOVE = GetBindingKey('CAMERAORSELECTORMOVE')
 	BUTTONs.TURNORACTION         = GetBindingKey('TURNORACTION')
+	--[[
 	local Camera,Turn = BUTTONs.CAMERAORSELECTORMOVE, BUTTONs.TURNORACTION
 	LibShared.softassert(Camera and not Camera:match('-'), "CAMERAORSELECTORMOVE binding has modifier in it, AutoRunCombo will not work.")
 	LibShared.softassert(  Turn and not   Turn:match('-'), "TURNORACTION has modifier in it, accidental rightclick protection will not work.")
-	self:Execute(" CameraBUTTON,TurnBUTTON = '"..Camera.."','"..Turn.."' ")
+	self:Execute(" CameraBUTTON,TurnBUTTON = '"..(Camera or '').."','"..(Turn or '').."' ")
 	self:Execute(" BUTTONs = newtable() ")
 	self:Execute(" BUTTONs.CAMERAORSELECTORMOVE = '"..Camera.."' ")
 	self:Execute(" BUTTONs.TURNORACTION = '"        ..Turn.."' ")
+	--]]
 end
-
-
---[[
-function WorldClickHandler:UpdateOverrideBindings2()
-	-- local CameraBUTTON,TurnBUTTON = 'BUTTON1','BUTTON2'    --'LeftButton','RightButton'
-	-- Only the first binding is handled of each command. It cannot be rebound on the UI,so if a user binds more keys to it, definitely knows what he/she is doing.
-	local CameraBUTTON,TurnBUTTON = GetBindingKey('CAMERAORSELECTORMOVE'), GetBindingKey('TURNORACTION')
-	LibShared.softassert(CameraBUTTON and not CameraBUTTON:match('-'), "CameraBUTTON has modifier in it, AutoRunCombo will not work.")
-	LibShared.softassert(  TurnBUTTON and not   TurnBUTTON:match('-'), "TurnBUTTON has modifier in it, accidental rightclick protection will not work.")
-	self:Execute(" CameraBUTTON,TurnBUTTON = '"..CameraBUTTON.."','"..TurnBUTTON.."' ")
-end
---]]
 
 
 function WorldClickHandler:Enable(enable)
 	if  not self.enable == not enable  then  return nil  end
 	self.enable = enable
+	if enable
+	then  self:InitInsecureHooks()
+	else  self:DisableInsecureHooks()
+	end
 	return true
 end
+
+
+
 
 
 --[[
 /dump WCH.RunAttribute, WCH.RunSnippet, WCH.Run, WCH.CallMethod, WCH.ChildUpdate, WCH.SetFrameRef
 /dump WorldFrame:HasScript('OnClick'), WorldFrame:HasScript('PreClick'), WorldFrame:HasScript('PostClick'), WorldFrame:HasScript('OnMouseUp'), WorldFrame:HasScript('OnMouseDown')
 --]]
-
-
 
 
 --[[

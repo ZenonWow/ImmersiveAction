@@ -305,3 +305,40 @@ LibShared.Define.CreateMacroButton = function(name, macrotext, label)
 end
 
 
+
+
+LibShared.MapButtonToKey = LibShared.MapButtonToKey  or  setmetatable({
+	-- Necessary special cases:
+	LeftButton   = 'BUTTON1',
+	RightButton  = 'BUTTON2',
+	MiddleButton = 'BUTTON3',
+	-- Common:
+	Button4 = 'BUTTON4',
+	Button5 = 'BUTTON5',
+	-- 8 fields are preallocated, these are free in terms of memory:
+	-- BUTTON6 = 'Button6',
+	-- BUTTON7 = 'Button7',
+	-- BUTTON8 = 'Button8',
+},{
+	__index = function(self, Button)  return 'BUTTON'..Button:sub(7)  end
+	-- __index = function(self, Button)  return Button:upper()  end
+})
+-- for i=4,8 do  LibShared.MapButtonToKey['Button'..i] = 'BUTTON'..i  end
+-- for i=4,16 do  LibShared.MapButtonToKey['Button'..i] = 'BUTTON'..i  end
+-- for i=4,31 do  LibShared.MapButtonToKey['Button'..i] = 'BUTTON'..i  end
+
+
+
+LibShared.IsModifierPressed = LibShared.IsModifierPressed  or  {
+	ALT = IsAltKeyPressed,
+	CTRL = IsCtrlKeyPressed,
+	SHIFT = IsShiftKeyPressed,
+	['ALT-CTRL']   = function()  return IsAltKeyPressed() and IsCtrlKeyPressed()  end,
+	['ALT-SHIFT']  = function()  return IsAltKeyPressed() and IsShiftKeyPressed()  end,
+	['CTRL-SHIFT'] = function()  return IsCtrlKeyPressed() and IsShiftKeyPressed()  end,
+	['ALT-CTRL-SHIFT'] = function()  return IsAltKeyPressed() and IsCtrlKeyPressed() and IsShiftKeyPressed()  end,
+	[''] = function()  return true  end,
+}
+
+
+

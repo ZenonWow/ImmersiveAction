@@ -2,7 +2,13 @@ local G, ADDON_NAME, ADDON = _G, ...
 local IA = G.ImmersiveAction or {}  ;  G.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 
-local LibShared,CreateFrame,ipairs,GetBindingKey = LibShared,CreateFrame,ipairs,GetBindingKey
+-- Upvalued Lua globals:
+local LibShared,CreateFrame,GetBindingKey = LibShared,CreateFrame,GetBindingKey
+local next,ipairs,rtablepairs = next,ipairs,G.rtable.pairs
+local print,tostring = print,tostring
+local CheckInteractDistance,CanLootUnit = CheckInteractDistance,CanLootUnit
+local UnitIsUnit,UnitIsDead,UnitIsFriend,UnitIsEnemy,UnitIsPlayer,UnitPlayerControlled =
+			UnitIsUnit,UnitIsDead,UnitIsFriend,UnitIsEnemy,UnitIsPlayer,UnitPlayerControlled
 
 
 ---------------------------------
@@ -32,28 +38,6 @@ InteractNearest.Overrides.INTERACTNEAREST = true
 
 
 
---[[ Dec 7, 2017 by justice7ca
-"Smart Targeting" to replace the default left click, or to be remapped with a keybind.
-Essentially it will:
-- No Target Selected
-	- Scan for Enemy Target
-		- No Enemy Target Found, Target Friendly
-- Enemy Targeted
-	- Scan for Target Enemy (click for new target)
-- Friendly Targeted
-	- If Friendly Target is within interact range, interact with target, otherwise Select Enemy Player Scan / Select Friendly if none found
-The purpose of this is to allow left click to be used for multiple purposes while in ActionMode.
---]]
-
---[[ Dec 10, 2017 by justice7ca
- I actually ended up handling this slightly differently in 1.2.0.
- Left click selects friendly by default, if you're within range, it will change to interact for you.
- If you're out of range, it's back to select friendly.
- Essentially allowing you to Mouse1 your way to victory while questing / talking to NPC's.
---]]
-
-
-
 ---------------------------------
 -- SecureHandlerStateTemplate for a minimal in-combat functionality
 ---------------------------------
@@ -79,7 +63,6 @@ InCombatHandler.OverrideBindingInCombat = [===[
 ]===]
 
 
-local rtablepairs = G.rtable.pairs
 
 -- Pair of OverrideBindingInCombat in insecure (out-of-combat) context.
 function InCombatHandler:OverrideBindingOutOfCombat(command)
@@ -204,7 +187,7 @@ function InteractNearest:OnUpdate(elapsed)
 	self.sinceLastCheck = self.sinceLastCheck + elapsed
 	if  self.CheckInterval < self.sinceLastCheck  and  self.trackedUnit then
 		self.sinceLastCheck = 0
-		self:OverrideBindings()
+		self:UpdateInteractBinding()
 	end
 end
 
@@ -349,15 +332,19 @@ local function CheckUnitIsLootable(unit)
 	return  UnitIsEnemy('player', unit)
 		and  UnitIsDead(unit)    -- loot
 		-- and  select(2, CanLootUnit( UnitGUID(unit) ))
-	-- local hasLoot, canLoot = CanLootUnit( UnitGUID(unit)) )
 end
 
 
 function InteractNearest:StartTackingUnit(unit)
-	print("InteractNearest:StartTackingUnit("..unit..")")
+	local interact, loot
+	if CanLootUnit then
+		interact, loot = CanLootUnit(UnitGUID(unit))
+	else
+		interact = CheckUnitIsInteractable(unit)
+		loot = not interact and CheckUnitIsLootable(unit)
+	end
 
-	local interact = CheckUnitIsInteractable(unit)
-	local loot = not interact and CheckUnitIsLootable(unit)
+	print("InteractNearest:StartTackingUnit("..unit.."):", "interact: "..IA.colorBoolStr(interact), "loot: "..IA.colorBoolStr(loot) )
 	-- Check whether to track this unit.
 	if  not interact  and  not loot  then
 		-- Don't replace monitored unit with a non-interactable unit.
@@ -386,7 +373,15 @@ end
 
 function InteractNearest:UpdateInteractBinding()
 	local unit = self.trackedUnit
-	local interact =  unit  and  CheckInteractDistance(unit, self.InteractRange)
+	-- local interact =  unit  and  CheckInteractDistance(unit, self.InteractRange)
+	local interact, loot
+	if not unit then
+	elseif CanLootUnit then
+		interact, loot = CanLootUnit(UnitGUID(unit))
+	else
+		interact = CheckInteractDistance(unit, self.InteractRange)
+	end
+
 	local command =
   interact  and  self.InteractCommand
 		or  self.TargetLastHostile
@@ -395,6 +390,7 @@ function InteractNearest:UpdateInteractBinding()
 	if  command == self.currentBinding  then  return  end		-- no changes
 	self.currentBinding = command
 
+	print("InteractNearest:UpdateInteractBinding("..unit.."):", "interact: "..IA.colorBoolStr(interact), "loot: "..IA.colorBoolStr(loot), "command: "..command )
 	-- Override the bindings with the new command.
 	-- This cannot be called InCombatLockdown().
 	-- Do with the handler.
