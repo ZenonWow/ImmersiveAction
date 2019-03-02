@@ -2,6 +2,9 @@ local G, ADDON_NAME, ADDON = _G, ...
 local IA = G.ImmersiveAction or {}  ;  G.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 
+--- Readable frame lists in SavedVariables/ImmersiveAction.lua, enable:
+-- IA.ExportFrameLists  = true
+
 assert(ADDON.WindowList, "Include WindowList.lua before WindowHooks.lua")
 local getSubField = assert(ADDON.getSubField, "getSubField() missing from WindowList.lua")
 local tDeleteItem = G.tDeleteItem  -- from FrameXML/Util.lua
@@ -82,6 +85,7 @@ local STEP = 25
 
 local function DBAdd(listName, frameName)
 	local was = DB[listName]
+	if not was then  return  end
 	local len = #was + #frameName
 	local pad = STEP - len % STEP
 	local nl = ""
@@ -138,12 +142,13 @@ end
 local function InitDB()
 	if DB then  return  end
 	DB = G.ImmersiveActionDB or {}  ;  G.ImmersiveActionDB = DB
-	DB.NoGetName = ""
-	DB.NonHook = ""
-	DB.ErrHook = ""
-	DB.ErrFrames = {}
-	DB.GoodFrames = ""
-	DB.MissFrames = ""
+	local empty = IA.ExportFrameLists and "" or nil
+	DB.NoGetName = empty
+	DB.NonHook = empty
+	DB.ErrHook = empty
+	DB.ErrFrames = empty and {}
+	DB.GoodFrames = empty
+	DB.MissFrames = empty
 end
 
 function  IA:HookUpFrames()
@@ -187,9 +192,11 @@ function  IA:HookUpFrames()
 		Log.Init('  IA:HookUpFrames():  missing '.. #FramesToHookNew ..' frames.  List them by entering   /dump ImmersiveAction.FramesToHook')
 	end
 	
-	DB.MissFrames = ""
-	for i,frameName in ipairs(FramesToHookNew) do
-		DBAdd('MissFrames', frameName)
+	if DB.MissFrames then
+		DB.MissFrames = ""
+		for i,frameName in ipairs(FramesToHookNew) do
+			DBAdd('MissFrames', frameName)
+		end
 	end
 end
 

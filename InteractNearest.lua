@@ -3,7 +3,7 @@ local IA = G.ImmersiveAction or {}  ;  G.ImmersiveAction = IA
 local Log = IA.Log or {}  ;  IA.Log = Log
 
 -- Upvalued Lua globals:
-local LibShared,CreateFrame,GetBindingKey = LibShared,CreateFrame,GetBindingKey
+local LibShared,CreateFrame,GetBindingKey,SetOverrideBinding = LibShared,CreateFrame,GetBindingKey,SetOverrideBinding
 local next,ipairs,rtablepairs = next,ipairs,G.rtable.pairs
 local print,tostring = print,tostring
 local CheckInteractDistance,CanLootUnit = CheckInteractDistance,CanLootUnit
@@ -26,7 +26,7 @@ InteractNearest.InCombatHandler = InCombatHandler
 -- InteractNearest.TargetEnemiesToo = 'TARGETNEAREST'
 InteractNearest.TargetCommand = 'TARGETNEARESTFRIEND'
 InteractNearest.InteractRange = 3    -- yards
-InteractNearest.CheckInterval = 0.3  -- seconds
+InteractNearest.CheckInterval = 1    -- 0.3  -- seconds
 
 
 --- INTERACTTARGET --> TARGETNEARESTFRIEND / INTERACTTARGET depending on range.
@@ -70,7 +70,7 @@ function InCombatHandler:OverrideBindingOutOfCombat(command)
 
 	-- Iterate the same, restricted table as the secure version. Reading is allowed.
 	for key,original in rtablepairs(DynamicKeys) do
-		self:SetBinding(true, key, command)    -- true: priority over UserBindings (where user selected INTERACTNEAREST)
+		SetOverrideBinding(self, true, key, command)    -- true: priority over UserBindings (where user selected INTERACTNEAREST)
 	end
 end
 
@@ -204,13 +204,13 @@ InteractNearest:SetScript('OnUpdate', InteractNearest.OnUpdate)
 function InteractNearest:UPDATE_MOUSEOVER_UNIT(event, ...)
 	Log.Event(event)
 	-- Hovering a new mouseover will override the previous trackedUnit if it was 'target'.
-	self:StartTackingUnit('mouseover')
+	self:StartTrackingUnit('mouseover')
 end
 
 function InteractNearest:PLAYER_TARGET_CHANGED(event, ...)
 	Log.Event(event)
 	-- Selecting a new target after finding a potential mouseover will override the trackedUnit.
-	self:StartTackingUnit('target')
+	self:StartTrackingUnit('target')
 end
 
 
@@ -220,8 +220,8 @@ end
 ---------------------------------
 
 function InteractNearest:StartTacking()
-	-- StartTackingUnit() calls OverrideBindings() if necessary.
-	local unit =  self:StartTackingUnit('mouseover')  or  self:StartTackingUnit('target')
+	-- StartTrackingUnit() calls OverrideBindings() if necessary.
+	local unit =  self:StartTrackingUnit('mouseover')  or  self:StartTrackingUnit('target')  or  self:UpdateInteractBinding()
 	self:Show()    -- Request OnUpdate() calls.
 end
 
@@ -229,7 +229,7 @@ end
 function InteractNearest:PLAYER_REGEN_ENABLED(event)
 	-- Called by ImmersiveAction:PLAYER_REGEN_ENABLED(event)
 	-- to update OverridesIn.InteractNearest.*
-	-- in StartTackingUnit(), before OverrideBindings:OverrideCommands(..)
+	-- in StartTrackingUnit(), before OverrideBindings:OverrideCommands(..)
 	Log.Event(event)
 	self:RegisterEvent('UPDATE_MOUSEOVER_UNIT')
 	self:RegisterEvent('PLAYER_TARGET_CHANGED')
@@ -335,7 +335,7 @@ local function CheckUnitIsLootable(unit)
 end
 
 
-function InteractNearest:StartTackingUnit(unit)
+function InteractNearest:StartTrackingUnit(unit)
 	local interact, loot
 	if CanLootUnit then
 		interact, loot = CanLootUnit(UnitGUID(unit))
@@ -344,7 +344,7 @@ function InteractNearest:StartTackingUnit(unit)
 		loot = not interact and CheckUnitIsLootable(unit)
 	end
 
-	print("InteractNearest:StartTackingUnit("..unit.."):", "interact: "..IA.colorBoolStr(interact), "loot: "..IA.colorBoolStr(loot) )
+	print("InteractNearest:StartTrackingUnit("..unit.."):", "interact: "..IA.colorBoolStr(interact), "loot: "..IA.colorBoolStr(loot) )
 	-- Check whether to track this unit.
 	if  not interact  and  not loot  then
 		-- Don't replace monitored unit with a non-interactable unit.
@@ -356,7 +356,7 @@ function InteractNearest:StartTackingUnit(unit)
 		self.TargetLastHostile = nil
 	end
 
-	print("InteractNearest:StartTackingUnit(..) -> new trackedUnit = "..tostring(unit))
+	print("InteractNearest:StartTrackingUnit(..) -> new trackedUnit = "..tostring(unit))
 	self.trackedUnit = unit
 	self.InteractCommand = unit == 'mouseover' and 'INTERACTMOUSEOVER' or 'INTERACTTARGET'
 
@@ -390,7 +390,7 @@ function InteractNearest:UpdateInteractBinding()
 	if  command == self.currentBinding  then  return  end		-- no changes
 	self.currentBinding = command
 
-	print("InteractNearest:UpdateInteractBinding("..unit.."):", "interact: "..IA.colorBoolStr(interact), "loot: "..IA.colorBoolStr(loot), "command: "..command )
+	print("InteractNearest:UpdateInteractBinding("..(unit or 'nil').."):", "interact: "..IA.colorBoolStr(interact), "loot: "..IA.colorBoolStr(loot), "command: "..command )
 	-- Override the bindings with the new command.
 	-- This cannot be called InCombatLockdown().
 	-- Do with the handler.
