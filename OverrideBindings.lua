@@ -31,7 +31,9 @@ OverridesIn.AutoRun.MOVEANDSTEER = 'TURNORACTION'         -- Note: override the 
 -- OverridesIn.AutoRun.TURNORACTION = 'TurnWithoutInteract'    -- This is not priority.
 OverridesIn.AutoRun.AUTORUN = 'TurnWithoutInteract'
 -- OverridesIn.MoveAndSteer.TURNORACTION = 'AUTORUN'         -- MoveAndSteer + RightButton -> AutoRun not working. AUTORUN does nothing on B1,B2
-OverridesIn.ActionMode.TURNORACTION = 'ReleaseCursor'     -- This is the priority.
+-- OverridesIn.ActionMode.TURNORACTION = 'ReleaseCursor'     -- This is the priority. UserBinding from now.
+-- A wow bug eliminates the release event of ReleaseCursor, stucking in CursorMode, while in ActionMode...
+-- Too risky to do this automatically. The user can do so in Settings.
 -- OverridesIn.ActionMode.CAMERAORSELECTORMOVE = 'MOVEFORWARD'    -- This is user setting.
 -- Or override with MoveForward in ActionMode, but that's no help out of ActionMode.
 -- OverrideBindings.OverridesIn.ActionMode.MOVEANDSTEER = 'MoveForward'
@@ -66,50 +68,32 @@ OverridesIn.ActionMode.TURNORACTION = 'ReleaseCursor'     -- This is the priorit
 local UserBindings = CreateFrame('Frame')
 IA.UserBindings = UserBindings
 UserBindings:Hide()
-UserBindings.cmdKeyMaps = {}
 
 
 function UserBindings:SetUserBinding(mode, key, toCmd)
+	-- local wasCmd = IA.db.profile['bindingsIn'..mode][key]
 	IA.db.profile['bindingsIn'..mode][key] = toCmd
-	self:OverrideOneBinding(mode, key, toCmd)
-end
-
-
-function UserBindings:OverrideOneBinding(mode, key, toCmd)
-	if key=='' then  key = nil  end
-
-	local cmdKeyMap = self.cmdKeyMaps[mode]
-	if not cmdKeyMap then  cmdKeyMap = {} ; self.cmdKeyMaps[mode] = cmdKeyMap  end
-
-	local oldKey = cmdKeyMap[toCmd]
-	if oldKey then  SetOverrideBinding(self, false, oldKey, nil)  end
-	cmdKeyMap[toCmd] = key
+	-- print("UserBindings:, key, "   ==>   ", toCmd)
 	SetOverrideBinding(self, false, key, toCmd)
 end
 
 
 
-function UserBindings:OverrideBindings(mode, keyBindings)
+function UserBindings:ApplyBindings(keyBindings)
 	if not keyBindings then  return  end
 
-	local cmdKeyMap = self.cmdKeyMaps[mode]
-	if not cmdKeyMap then  cmdKeyMap = {} ; self.cmdKeyMaps[mode] = cmdKeyMap  end
-
-	-- Set new overrides
+	-- Set new overrides.
 	for key,toCmd in pairs(keyBindings) do  if toCmd~='' then
 		if key=='' then  key = nil  end
-		local oldKey = cmdKeyMap[toCmd]
-		-- LibShared.softassertf(not oldKey or oldKey==key, "UserBindings:OverrideBindings(): command %s already registered, overwriting:  %s  ->  %s", toCmd, oldKey, key)
-		cmdKeyMap[toCmd] = key
 		-- print("UserBindings:, key, "   ==>   ", toCmd)
 		SetOverrideBinding(self, false, key, toCmd)
-	end end -- for for
+	end end -- for if
 end
 
 
 
-function UserBindings:OverrideUserBindings(mode, enable)
-	if enable then  self:OverrideBindings(mode, IA.db.profile['bindingsIn'..mode])  end
+function UserBindings:ApplyUserBindings(mode)
+	self:ApplyBindings(IA.db.profile['bindingsIn'..mode])
 end
 
 
@@ -125,12 +109,13 @@ function UserBindings:UpdateUserBindings()
 	local wasMouselooking = IA.IsMouselooking()
 	if wasMouselooking then
 		-- Log.Anomaly('UserBindings:UpdateUserBindings() while IsMouselooking() could cause stuck keys, temporarily disabling Mouselook.')
-		IA.MouselookStop()
+		-- IA.MouselookStop()
 	end
 
 	ClearOverrideBindings(UserBindings)
-	self:OverrideUserBindings('General', true)
-	self:OverrideUserBindings('ActionMode', IA.activeCommands.ActionMode)
+	self:ApplyUserBindings('General')
+	local ActionMode = IA.activeCommands.ActionMode
+	if ActionMode then  self:ApplyUserBindings('ActionMode')  end
 
 	-- Modifiers (SHIFT/CTRL/ALT) to turn on/off ActionMode.
 	-- Currently the ModifiedClick is not used, only the profile.modifiers.* setting.
@@ -138,7 +123,7 @@ function UserBindings:UpdateUserBindings()
 	-- SetModifiedClick('ActionModeDisable', profile.modifiers.disableModifier)
 
 	-- self:ResetState()
-	if wasMouselooking then  IA.MouselookStart()  end
+	-- if wasMouselooking then  IA.MouselookStart()  end
 end
 
 
@@ -242,8 +227,8 @@ function OverrideBindings:UpdateOverrides(enable)
 		print("OverrideBindings:UpdateOverrides("..IA.colorBoolStr(enable, true)..")")
 		if enable==nil then  enable = true  end
 		IA.UserBindings:UpdateUserBindings()
-		if enable then  self:OverrideCommandsIn('General'   , enable)  end
-		self:OverrideCommandsIn('AutoRun'   , enable)
+		if enable then  self:OverrideCommandsIn('General', enable)  end
+		self:OverrideCommandsIn('AutoRun', enable)
 		self:OverrideCommandsIn('MoveAndSteer', enable)
 		self:OverrideCommandsIn('ActionMode', enable)
 	end
@@ -322,7 +307,9 @@ end
 
 
 
-local MapButtonToKey = LibShared.Require.MapButtonToKey
+local MapButtonToKey,GetBindingModifier = LibShared:Import('MapButtonToKey,GetBindingModifier')
+local GetBindingByButton = LibShared.Require.GetBindingByButton
+local tremove = G.table.remove
 
 
 
@@ -344,10 +331,15 @@ local MapButtonToKey = LibShared.Require.MapButtonToKey
 local WorldClickHandler = CreateFrame('Frame', nil, nil, 'SecureHandlerMouseUpDownTemplate')
 IA.WorldClickHandler = WorldClickHandler
 -- Export to _G.WCH for DEVMODE.
-if G.DEVMODE then  G.WCH = G.WCH or WCH  end
+if G.DEVMODE then  G.WCH = G.WCH or WorldClickHandler  end
 
 -- Last GetTime() when the TurnButton (RightButton by default) was clicked.
 WorldClickHandler.LastTurnClick = 0
+
+-- Pressed key -> command map. Key is _without_ modifiers.  Wow seems to release commands when the key is released, regardless of when the modifiers are released.
+-- But if the binding is changed while pressed, the new binding is released. This map is enough to release the proper command, so I wonder why the wow client fails to do so.
+WorldClickHandler.Pressed = {}
+WorldClickHandler.PressOrder = {}
 
 
 -- Methods before being hooked.
@@ -445,23 +437,71 @@ end
 
 
 
+
+function WorldClickHandler:PressKey(key, command)
+	local stuck = self.Pressed[key]
+	self.Pressed[key] = command
+	if not stuck then
+		-- Insert if not there yet.
+		local idx = #self.PressOrder+1
+		self.PressOrder[idx] = key
+	end
+	return stuck
+end
+
+
+function WorldClickHandler:ReleaseKey(key)
+	local command = self.Pressed[key]
+	if not command then  return command  end
+
+	self.Pressed[key] = nil
+	for i = #self.PressOrder, 1, -1 do
+		if self.PressOrder[i] == key then
+			tremove(self.PressOrder, i)
+			return command
+		end
+	end
+	-- Should not come here:  pressed key not found in PressOrder.
+	return command
+end
+
+
 function WorldClickHandler.OnMouseDown(frame, button)
 	local self = WorldClickHandler
 	-- If the OnMouseUp hook runs before TurnOrActionStop(),
 	-- then similarly OnMouseDown runs before TurnOrActionStart(), right?  (before hiding the mouseover)
 	self.wasMouseover = UnitExists('mouseover')
+
+	-- local key,mod = MapButtonToKey[button], GetBindingModifier()
+	-- local command = G.GetBindingByKey(mod..key)
+	local command,mod,key = GetBindingByButton(button)
+	local stuck = self:PressKey(key, command)
+
 	print()
 	self.counter = (self.counter or 0) + 1
-	print("        ", self.counter, frame:GetName(), IA.coloredKey(button, true))
+	print("        ", self.counter, frame:GetName(), IA.coloredKey(button, true), mod..key, stuck and IA.colors.red.."STUCK key:|r "..stuck or "")
 
 	if self.prevClickToMove then  SetCVar("AutoInteract", self.prevClickToMove) ; self.prevClickToMove = nil  end
 	
-	local key = MapButtonToKey[button]
-	-- Test AUTORUN override.
+	-- Test AUTORUN override. AUTORUN is very picky, BUTTON1-2 just refuses it, modifiers 'sometimes' work. Combos... never?
 	-- if key == 'BUTTON1' then  SetOverrideBinding(self, true, 'BUTTON4', 'AUTORUN')  end
+	
+	if command=='MOVEFORWARD' then  IA:SetCommandState('MoveForwardTurns', true)  end
 
 	-- Cast the spell on LeftButton even if ActionMode was turned on after starting spell targeting.
-	if key == self.BUTTONs.CAMERAORSELECTORMOVE and G.SpellIsTargeting() and IA.IsMouselooking() then
+	if command=='CAMERAORSELECTORMOVE' and G.SpellIsTargeting() and IA.IsMouselooking() then
+	-- if key == self.BUTTONs.CAMERAORSELECTORMOVE and G.SpellIsTargeting() and IA.IsMouselooking() then
+		IA.MouselookStop()
+		-- After the Camera command UpdateMouselook() expects lastMouselook to be the same as IsMouselooking().
+		IA.lastMouselook = false
+	end
+
+	-- Try to mitigate the wow bug that eliminates the OnMouseUp event of RightButton when pressed in Mouselook mode.
+	-- if key == self.BUTTONs.TURNORACTION and IA.IsMouselooking() then
+	-- if button == 'RightButton' and IA.IsMouselooking() then
+	if command == 'ReleaseCursor' and IA.IsMouselooking() then
+		-- Let it believe it's turning on Mouselook.
+		print("Try to fix RightButton stuck bug.")
 		IA.MouselookStop()
 		IA.lastMouselook = false
 	end
@@ -470,10 +510,19 @@ end
 
 function WorldClickHandler.OnMouseUp(frame, button)
 	local self = WorldClickHandler
-	print("        ", self.counter, frame:GetName(), IA.coloredKey(button, false) )
-	local key = MapButtonToKey[button]
-	if  key == self.BUTTONs.TURNORACTION  then
-	-- if button == 'RightButton' then
+	local mod,key = GetBindingModifier(), MapButtonToKey[button]
+	local command = self:ReleaseKey(key)
+	print("        ", self.counter, frame:GetName(), IA.coloredKey(button, false), mod..key, command or IA.colors.red.."NOT pressed|r")
+
+	if not command then
+		command = G.GetBindingByKey(mod..key)
+	end
+
+	if command=='MOVEFORWARD' then  IA:SetCommandState('MoveForwardTurns', false)  end
+
+	-- if  key == self.BUTTONs.TURNORACTION  then
+	if command=='TURNORACTION' or command=='INTERACTMOUSEOVER' then
+		-- button == 'RightButton' with the default bindings.
 		WorldClickHandler.FixRightClick(frame, button)
 	end
 	-- if key == 'BUTTON1' then  SetOverrideBinding(self, true, 'BUTTON4', nil)  end
@@ -498,9 +547,8 @@ function WorldClickHandler.FixRightClick(frame, button)
 end
 
 
-WorldClickHandler.PreventAllSingleClicks = false
+-- To test in Legion/Bfa if it works better the Mop, where it does not stop at the target, but keeps on going further.
 -- WorldClickHandler.RunToDoubleClickGround = true
-WorldClickHandler.RunToDoubleClickMouseover = true
 
 function WorldClickHandler:FixAccidentalRightClick(frame, button)
 	if IA.FixB2 == false then  return  end
@@ -517,18 +565,18 @@ function WorldClickHandler:FixAccidentalRightClick(frame, button)
 
 	if  now-last > DoubleClickInterval then
 		-- NOT DoubleClick
-		if self.wasMouseover or self.PreventAllSingleClicks then
-			print("IA.FixB2: MouselookStop()")
+		if  self.wasMouseover and self.db.profile.preventSingleClickMouseover  or  self.db.profile.preventSingleClick  then
+			print("IA.FixRightClick: MouselookStop()")
 			IA.MouselookStop()    -- Trick TurnOrActionStop() into believing it was not pressed.
 		end
-  elseif  self.RunToDoubleClickMouseover  and  self.wasMouseover
+  elseif  self.db.profile.runToDoubleClickMouseover  and  self.wasMouseover
 	or  self.RunToDoubleClickGround  and  not self.wasMouseover
   then  --  and not InCombatLockdown() then
-		print("IA.FixB2: RunToDoubleClick")
+		print("IA.FixRightClick: runToDoubleClickMouseover")
 		local prevClickToMove = GetCVar('AutoInteract')    --  Adequately named cvar.
 		if  prevClickToMove ~= '1'  then  SetCVar('AutoInteract', '1') ; self.prevClickToMove = prevClickToMove  end
 	else
-		print("IA.FixB2: Interact")
+		print("IA.FixRightClick: Interact")
 	end
 end
 

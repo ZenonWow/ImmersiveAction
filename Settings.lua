@@ -19,6 +19,9 @@ IA.defaultSettings = {
 		enableAfterMoveAndSteer = true,
 		disableWithLookAround = true,
 		actionModeMoveWithCameraButton = false,
+		preventSingleClickMouseover = true,
+		preventSingleClick = false,
+		runToDoubleClickMouseover = true,
 		bindingsInActionMode = {},
 		bindingsInGeneral = {  -- 2019-02-28:
 			--['BUTTON1']				= "INTERACTNEAREST",
@@ -31,7 +34,7 @@ IA.defaultSettings = {
 			['CTRL-BUTTON1']	= "INTERACTNEAREST",
 			['CTRL-BUTTON2']	= "INTERACTMOUSEOVER",  -- Does INTERACTTARGET if there is nothing under the mouse (no mouseover)
 			-- ['ALT-BUTTON4']	= "AUTORUN",
-			-- ['BUTTON5']	= "AUTORUN",
+			-- ['BUTTON5']	    = "AUTORUN",
 			-- ['CTRL-BUTTON4']	= "ToggleActionMode",
 			--[[
 			['BUTTON1']				= "MOVEANDSTEER",
@@ -98,17 +101,18 @@ Config.commands = {
 
 		'CAMERAORSELECTORMOVE',			-- Left Button default:  rotate camera or target mouseover.  Disables Mouselook when pressed, otherwise it acts as MoveAndSteer.
 		'TURNORACTION',							-- Right Button default:  Mouselook if hold, InteractMouseover if clicked
-		'TURNWITHMOUSE',						-- Turn with mouse, no actions
+		'TurnWithoutInteract',			-- Turn with mouse, no actions
+		'ReleaseCursor',            -- Switch back to CursorMode while pressed.
 
 		-- Interact
 		'INTERACTMOUSEOVER',				-- select with mouse + interact, no turning or camera
 		-- hook mouse button directly to disable Mouselook while pressed
 		-- or override with COMBATMODE_DISABLE
 		'INTERACTTARGET',						-- no select, only interact
-		-- any valid use-cases for this in ImmersiveAction?
+		-- any valid use-cases for this?
 
 		-- Target (select with mouse)
-		'INTERACTNEAREST',	          -- could override INTERACTMOUSEOVER instead: without cursor (in ImmersiveAction) it has no effect
+		'INTERACTNEAREST',	          -- could override INTERACTMOUSEOVER instead: without cursor (in ActionMode) it has no effect
 		'TARGETSCANENEMY',						-- target npc/player in crosshair (middle of screen), can be far away, with turning/lock (Mouselook)
 		'TARGETNEARESTENEMY',					-- target nearest, no turning
 
@@ -278,6 +282,9 @@ Config.optionsTableList = {
 	optToggle("enableAfterMoveAndSteer", "Enable with Move and steer", "After pressing MoveAndSteer:  ActionMode will stay enabled."),
 	optToggle("disableWithLookAround", "Disable with looking around", "Clicking LeftButton (turning the camera away from the direction your character looks) will disable ActionMode."),
 	optToggle("actionModeMoveWithCameraButton", "Move with LeftButton", "Effective in ActionMode:  You will move forward while pressing LeftButton. Try RightButton as well, and the two together (MouseCursorMode, LookAroundMode)"),
+	optToggle("preventSingleClickMouseover", "Prevent accidental rightclick over units", "Single rightclick over units won't attack/interact the mouseover unit.\n".."Double-click to interact."),
+	optToggle("preventSingleClick", "Prevent accidental rightclick everywhere", "Single rightclick won't attack/interact or click objects.\n".."Double-click to interact."),
+	optToggle("runToDoubleClickMouseover", "Run to double-clicked unit", "Double-click a unit to run up to it and interact."),
 	optMod("enableModifier", "Enable with modifier:", "While pressing this modifier the camera turns with the mouse."),
 	optMod("disableModifier", "Disable with modifier:", "While pressing this modifier the mouse cursor is free to move."),
 	--optBind("smarttargeting", "Smart Targeting", "Buttons that target the closest friendly NPC and interact with it if close enough", SmartTargetValues),

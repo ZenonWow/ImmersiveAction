@@ -22,6 +22,9 @@
 /run SetBinding('BUTTON4','CAMERAORSELECTORMOVE') SetBinding('BUTTON1','MOVEANDSTEER')
 /run SetBinding('BUTTON1','CAMERAORSELECTORMOVE') SetBinding('BUTTON4','MOVEANDSTEER')
 
+/dump GetBindingByKey('BUTTON2'),  GetBindingByKey('BUTTON4'),  GetBindingByKey('ALT-BUTTON4')
+/dump GetBindingByKey('ALT-CTRL-BUTTON2')
+
 /dump GetBindingByKey('MOUSEWHEELUP'), GetBindingByKey('MOUSEWHEELDOWN'), GetBindingByKey('MOVEANDSTEER'), GetBindingByKey('MOVEFORWARD')
 /dump GetBindingByKey('BUTTON1'), GetBindingByKey('BUTTON2'), GetBindingByKey('ALT-BUTTON1'), GetBindingByKey('ALT-BUTTON2')
 /dump GetBindingByKey('CTRL-BUTTON1'), GetBindingByKey('CTRL-BUTTON2'), GetBindingByKey('SHIFT-BUTTON1'), GetBindingByKey('SHIFT-BUTTON2')
@@ -32,12 +35,13 @@
 /run ClearOverrideBindings(IA.OverrideBindings)
 /run ClearOverrideBindings(IA.UserBindings)
 
-/run IA.db.profile.bindings = nil
+/dump IA.db.profile.bindingsInGeneral
+/run IA.db.profile.bindingsInActionMode = nil
 /run local B = IA.db.profile.bindingsInGeneral ; B. BUTTON1 = 'MOVEANDSTEER'  B['ALT-BUTTON1'] = 'AUTORUN'  B. BUTTON4 = 'CAMERAORSELECTORMOVE'
 /run local B = IA.db.profile.bindingsInGeneral ; B. BUTTON1 = 'CAMERAORSELECTORMOVE'  B['ALT-BUTTON1'] = 'AUTORUN'  B. BUTTON4 = 'MOVEANDSTEER'
 /run local B = IA.db.profile.bindingsInGeneral ; B. BUTTON2 = 'TURNORACTION' ; B. BUTTON5 = 'AUTORUN' ; B['ALT-BUTTON4'] = 'AUTORUN' ; B['ALT-BUTTON5'] = nil
 /run local B = IA.db.profile.bindingsInGeneral ; B. BUTTON5 = 'AUTORUN' ; B['ALT-BUTTON4'] = 'AUTORUN' ; B['CTRL-BUTTON4'] = 'ToggleActionMode'
-/run local B = IA.db.profile.bindingsInGeneral ; B. BUTTON2 = 'MOVEANDSTEER' ; B. BUTTON4 = 'TURNORACTION' ; B['ALT-BUTTON4'] = 'AUTORUN' ; B['CTRL-BUTTON4'] = 'ToggleActionMode'
+/run local B = IA.db.profile.bindingsInGeneral ; B. BUTTON2 = 'MOVEANDSTEER' ; B. BUTTON4 = 'TURNORACTION' ; B. BUTTON5 = 'AUTORUN' ; B['ALT-BUTTON4'] = 'AUTORUN' ; B['CTRL-BUTTON4'] = 'ToggleActionMode'
 
 /run IA.db.profile.bindingsInGeneral = { ["BUTTON2"] = "MOVEANDSTEER", ["BUTTON4"] = "TURNORACTION", ["BUTTON5"] = "AUTORUN", }
 /run IA.UserBindings:UpdateUserBindings()

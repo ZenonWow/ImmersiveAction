@@ -123,19 +123,20 @@ function IA:OnInitialize()
 	self:RegisterChatCommand("immersiveaction", "ChatCommand")
 	
 	--[[
-	Use one profile called 'Default' for all characters originally
-	Name of default profile can be changed with setting  profileKeys['default']
-	To have character-specific profiles when creating/initializing a new character
-	/run  ImmersiveActionDB.profileKeys['default'] = false
-	--]]
-	local defaultProfile = ImmersiveActionDB  and  ImmersiveActionDB.profileKeys  and  ImmersiveActionDB.profileKeys.Default
+	Use one profile called 'Default' for all characters originally.
+	Name of default profile can be changed with setting  profileKeys['Default'].
+	To have character-specific profiles when creating/initializing a new character:
+	/run  ImmersiveActionSV.profileKeys.Default = false
+	--
+	local defaultProfile = ImmersiveActionSV  and  ImmersiveActionSV.profileKeys  and  ImmersiveActionSV.profileKeys.Default
 	if  defaultProfile == nil  then  defaultProfile = true  end		-- false to have character-specific profiles
-
-	self.db = LibStub("AceDB-3.0"):New("ImmersiveActionDB", self.defaultSettings, defaultProfile)
+	self.db = LibStub("AceDB-3.0"):New("ImmersiveActionSV", self.defaultSettings, defaultProfile)
+	--]]
+	self.db = LibStub("AceDB-3.0"):New("ImmersiveActionSV", self.defaultSettings, true)
 	self.db.RegisterCallback(self, "OnProfileChanged", "ProfileChanged")
 	self.db.RegisterCallback(self, "OnProfileCopied", "ProfileChanged")
 	self.db.RegisterCallback(self, "OnProfileReset", "ProfileChanged")
-	--self.db.RegisterCallback(self, "OnDatabaseShutdown", "OnDisable")
+	-- self.db.RegisterCallback(self, "OnDatabaseShutdown", "OnLogout")
 	
 	self.activeCommands.ActionMode = self.db.profile.enabledOnLogin
 	self:ProfileChanged()
@@ -240,16 +241,6 @@ function IA.ResetMouseButton12Bindings()
 end
 
 
-local function SetBindings(keys, command)
-	if not keys then  return  end
-	for  i,key  in  ipairs(keys)  do
-		SetBinding(key, command)
-	end
-	local name = G['BINDING_NAME_'.. command]  or  command
-	print('ImmersiveAction updating binding  "'.. name ..'":  '.. table.concat(keys, ', '))
-end
-
-
 
 
 ----------------------
@@ -281,6 +272,7 @@ LibShared.SetScript = LibShared.SetScript or {}
 -- Like:  frame:ADDON_LOADED(eventName, addonName)  and  frame:PLAYER_LOGIN('PLAYER_LOGIN')  and so on.
 --
 LibShared.SetScript.OnEvent = LibShared.SetScript.OnEvent  or  function(frame, eventName, ...)  if frame[eventName] then  frame[eventName](frame, eventName, ...)  end end
+
 
 
 --- CreateMacroButton(name, macrotext, label)
@@ -329,16 +321,108 @@ LibShared.MapButtonToKey = LibShared.MapButtonToKey  or  setmetatable({
 
 
 
+local IsAltKeyDown,IsControlKeyDown,IsShiftKeyDown  =  IsAltKeyDown,IsControlKeyDown,IsShiftKeyDown
+
 LibShared.IsModifierPressed = LibShared.IsModifierPressed  or  {
-	ALT = IsAltKeyPressed,
-	CTRL = IsCtrlKeyPressed,
-	SHIFT = IsShiftKeyPressed,
-	['ALT-CTRL']   = function()  return IsAltKeyPressed() and IsCtrlKeyPressed()  end,
-	['ALT-SHIFT']  = function()  return IsAltKeyPressed() and IsShiftKeyPressed()  end,
-	['CTRL-SHIFT'] = function()  return IsCtrlKeyPressed() and IsShiftKeyPressed()  end,
-	['ALT-CTRL-SHIFT'] = function()  return IsAltKeyPressed() and IsCtrlKeyPressed() and IsShiftKeyPressed()  end,
-	[''] = function()  return true  end,
+	ALT   = IsAltKeyDown,
+	CTRL  = IsControlKeyDown,
+	SHIFT = IsShiftKeyDown,
 }
+
+
+--[[
+LibShared.IsModifierPressedExt = LibShared.IsModifierPressedExt  or  {
+	ALT   = G.IsAltKeyDown,
+	CTRL  = G.IsControlKeyDown,
+	SHIFT = G.IsShiftKeyDown,
+	LALT   = G.IsLeftAltKeyDown,
+	LCTRL  = G.IsLeftCtrlKeyDown,
+	LSHIFT = G.IsLeftShiftKeyDown,
+	RALT   = G.IsRightAltKeyDown,
+	RCTRL  = G.IsRightCtrlKeyDown,
+	RSHIFT = G.IsRightShiftKeyDown,
+}
+--]]
+
+
+LibShared.IsModifiedBinding = LibShared.IsModifiedBinding  or  {
+	[''] = function()  return true  end,
+	['ALT-']   = IsAltKeyDown,
+	['CTRL-']  = IsControlKeyDown,
+	['SHIFT-'] = IsShiftKeyDown,
+	['ALT-CTRL-']   = function()  return IsAltKeyDown() and IsControlKeyDown()  end,
+	['ALT-SHIFT-']  = function()  return IsAltKeyDown() and IsShiftKeyDown()  end,
+	['CTRL-SHIFT-'] = function()  return IsControlKeyDown() and IsShiftKeyDown()  end,
+	['ALT-CTRL-SHIFT-'] = function()  return IsAltKeyDown() and IsControlKeyDown() and IsShiftKeyDown()  end,
+}
+
+
+
+
+local ModifierBinaryIdx = {
+	[0] = '',       -- Zero-indexed array.
+	'ALT-',         -- 1
+	'CTRL-',        -- 2
+	'ALT-CTRL-',    -- 1+2
+	'SHIFT-',       -- 4
+	'ALT-SHIFT-',   -- 1+4
+	'CTRL-SHIFT-',  -- 2+4
+	'ALT-CTRL-SHIFT-',
+}
+
+--- GetBindingModifier():  Get the currently pressed modifiers in the bindings format:  'ALT-CTRL-SHIFT', and variants.
+-- @return  '' / 'ALT-' / 'CTRL-' / 'SHIFT-' / 'ALT-CTRL-' / 'ALT-SHIFT-' / 'CTRL-SHIFT-' / 'ALT-CTRL-SHIFT-'
+-- The order of modifiers is strictly ALT, CTRL, SHIFT - increasing alphabetical.
+--
+LibShared.GetBindingModifier = LibShared.GetBindingModifier  or  function()
+	local idx = 0
+	if IsAltKeyDown() then      idx = 1  end
+	if IsControlKeyDown() then  idx = idx + 2  end
+	if IsShiftKeyDown() then    idx = idx + 4  end
+	return ModifierBinaryIdx[idx]
+end
+
+
+
+local GetBindingModifier,MapButtonToKey,GetBindingByKey  =  LibShared.GetBindingModifier, LibShared.MapButtonToKey, G.GetBindingByKey
+
+LibShared.GetBindingByButton = LibShared.GetBindingByButton  or  function(button)
+	local mod,key = GetBindingModifier(), MapButtonToKey[button]
+	local command = GetBindingByKey(mod..key)
+	return command,mod,key
+end
+
+
+
+
+--[[
+-- A more readable version, that adds 3 numbers, while the previous adds only those pressed.
+LibShared.GetBindingModifier = LibShared.GetBindingModifier  or  function()
+	local idx =
+		(IsAltKeyDown() and 1 or 0) +
+		(IsControlKeyDown() and 2 or 0) +
+		(IsShiftKeyDown() and 4 or 0)
+	return ModifierBinaryIdx[idx]
+end
+
+-- This joins only those that are pressed.
+LibShared.GetBindingModifier = LibShared.GetBindingModifier  or  function()
+	local mod = ''
+	if IsAltKeyDown() then  mod = 'ALT-'  end
+	if IsControlKeyDown() then  mod = mod..'CTRL-'  end
+	if IsShiftKeyDown() then  mod = mod..'SHIFT-'  end
+	return mod
+end
+
+-- This joins 3 strings in any case.
+LibShared.GetBindingModifier3 = LibShared.GetBindingModifier3  or  function()
+	local mod = 
+		(IsAltKeyDown() and 'ALT-' or '') ..
+		(IsControlKeyDown() and 'CTRL-' or '') ..
+		(IsShiftKeyDown() and 'SHIFT-' or '')
+	return mod
+end
+--]]
 
 
 

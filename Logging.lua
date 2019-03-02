@@ -11,11 +11,13 @@ local Log = IA.Log or {}  ;  IA.Log = Log
 -- logging:
 /run ImmersiveAction.logging.all = false
 /run ImmersiveAction.logging.Anomaly = false
-/run ImmersiveAction.logging.State   = false
-/run ImmersiveAction.logging.Update  = true
 /run ImmersiveAction.logging.Command = true
+/run ImmersiveAction.logging.Frame = true
+/run ImmersiveAction.logging.State   = true
+/run ImmersiveAction.logging.Update  = true
 -- set to true or false  to override individual event settings
 /run ImmersiveAction.logging.Event.all = false
+/run ImmersiveAction.logging.Event.all = true
 -- individual events
 /run ImmersiveAction.logging.Event.CURSOR_UPDATE = false
 /run ImmersiveAction.logging.Event.PLAYER_TARGET_CHANGED = false
@@ -27,17 +29,17 @@ local Log = IA.Log or {}  ;  IA.Log = Log
 IA.logging = {
 	-- all = false,		-- set to false/true to override individual event settings.
 	-- all = true,
-	State   = false,
-	Update  = false,
-	Command = false,
+	State   = true,
+	Update  = true,
+	Command = true,
 	-- Anomaly = false,
 	Anomaly = true,
 	Init    = false,
-	Frame   = false,
+	Frame   = true,
 }
 IA.logging.Event = {
-	all = false,		-- set to false/true to override individual event settings.
-	-- all = true,
+	-- all = false,		-- set to false/true to override individual event settings.
+	all = true,
 	CURSOR_UPDATE = false,
 	PLAYER_TARGET_CHANGED = true,
 	-- PET_BAR_UPDATE = true,
@@ -68,8 +70,7 @@ makeLogFunc(Log, IA.logging, 'Frame'  )
 
 function Log.Event(event, extraMessage)
 	if  IA.logging:_onevent(event)  then
-		print(event ..':  cursor='.. (GetCursorInfo() or 'hand')
-		..' CursorPickedUp()='.. IA.colorBoolStr(CursorPickedUp(),true)
+		print(event ..':  GetCursorInfo()='.. (GetCursorInfo() or 'nil')
 		..' SpellIsTargeting()='.. IA.colorBoolStr(SpellIsTargeting(),true)
 		.. (extraMessage or '') )
 	end
@@ -83,6 +84,7 @@ end
 /run ImmersiveAction.colors[true] = ImmersiveAction.colors.green
 
 /run ImmersiveAction.colors.up = ImmersiveAction.colors.gray
+/run IA.colors.hide = ImmersiveAction.colors.gray
 --]]
 local colors = {
 		black			 = "|cFF000000",
@@ -107,11 +109,11 @@ IA.colors = colors
 colors['nil']			= colors.gray
 colors[false]			= colors.gray
 colors.up					= colors.gray
+colors.hide				= colors.gray
 colors[true]			= colors.lightblue
 colors.down				= colors.lightblue		--colors.purple
-colors.missedup		= colors.orange
 colors.show				= colors.lightblue
-colors.hide				= colors.blue
+colors.missedup		= colors.orange
 colors.event			= colors.lightgreen
 colors.ActionMode = colors.orange
 colors.AutoRun    = colors.orange
@@ -120,6 +122,11 @@ colors.Mouselook  = colors.yellow
 function IA.coloredKey(cmdName, pressed)
 	local keystate = pressed and "DOWN" or "UP"
 	return colors[pressed]..cmdName.." "..keystate.."|r"
+	-- return IA.coloredState(cmdName.." "..keystate, pressed)
+end
+
+function IA.coloredState(text, active)
+	return colors[active]..text.."|r"
 end
 
 function IA.colorBoolStr(value, withColor)
@@ -128,6 +135,5 @@ function IA.colorBoolStr(value, withColor)
 	return  withColor  and  withColor .. boolStr .. colors.restore  or  boolStr
 end
 local colorBoolStr = IA.colorBoolStr
-
 
 

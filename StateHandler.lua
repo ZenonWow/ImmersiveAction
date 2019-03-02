@@ -62,10 +62,11 @@ IA.commandGrouping = {
 	TurnWithoutInteract = 'MouseTurn',
 	ReleaseCursor       = 'MouseCursor',
 
-	MoveAndSteer	= 'MouseTurn',
+	MoveAndSteer  = 'MouseTurn',
 	-- TargetScanEnemy, TargetNearestEnemy:
 	TargetPriorityHighlight	= 'MouseTurn',
 	Mouselook     = 'MouseTurn',      -- Capture addons' usage and take into account.
+	MoveForwardTurns = 'MouseTurn',
 
 	MoveForward		= 'MoveKeys',
 	MoveBackward	= 'MoveKeys',
@@ -139,17 +140,13 @@ end
 function IA:ProcessCommand(cmdName, pressed)
 	local actives = self.activeCommands
 
-	-- if cmdName == 'MoveForward' and GetMouseButtonClicked() then
-	if cmdName == 'MoveForward' then
-		-- Log.Anomaly("  IA:ProcessCommand("..IA.coloredKey(cmdName, pressed)..") - patched to MoveAndSteer, GetMouseButtonClicked()="..tostring(GetMouseButtonClicked()))
-		cmdName = 'MoveAndSteer'
-	end
-
 	cmdName = self:CheckStuckState(cmdName, pressed)
 	self:CheckActionMode(cmdName, pressed)
 
 	--[[
 	-- TurnOrAction inverts the previous Mouselook state (the state before it was pressed).
+	-- The mop client bugs this:  release event of TurnButton (RightButton or any button bound to it) is eliminated by MouselookStop(),
+	-- therefore it can happen only when releasing, not inverted (when pressed).
 	if cmdName == 'TurnOrAction' then
 		if pressed
 		-- then  actives.TurnOrActionForcesState = not IA.lastMouselook
@@ -339,13 +336,15 @@ function IA:ExpectedMouselook()
 	-- In ActionMode B2+B1=Cursor+Camera (order matters) inverts MouselookMode to FreeCameraMode, allowing look-around. 
 	-- To move press B1 or B1+B2 (depending on actionModeMoveWithCameraButton).
 
-	-- TurnOrAction (RightButton) will _invert_ the Mouselook state active at the time it is pressed.
-	-- It takes precedence over WindowsOnScreen, SpellIsTargeting, CursorPickup, MoveAndSteer and modifiers (Shift/Ctrl/Alt).
+	-- TurnOrAction (RightButton) enables Mouselook state.
+	-- Tried to invert the Mouselook state, and found that wow silently eliminates the RightButton release event: OnMouseUp(RightButton) is not called
+	-- if RightButton was pressed when Mouselook was active.
+	-- TurnOrAction takes precedence over WindowsOnScreen, SpellIsTargeting, CursorPickup, MoveAndSteer and modifiers (Shift/Ctrl/Alt).
 	-- As long as you press the RightButton those do not matter, nor effect the behaviour.
 	-- if  nil~=actives.TurnOrActionForcesState  then  return actives.TurnOrActionForcesState, 'TurnOrAction'  end
-	if  actives.TurnOrAction then  return true , 'TurnOrAction'      end
+	if  actives.TurnOrAction then  return true, 'TurnOrAction'  end
 
-	-- In ActionMode (enables MouselookMode) the LeftButton would do MoveAndSteer instead of FreeCameraMode,
+	-- In ActionMode (enables Mouselook mode) the LeftButton would do MoveAndSteer instead of FreeCameraMode,
 	-- just like when both buttons are pressed. To enter FreeCameraMode we disable MouselookMode.
 	-- Except when the user requested that LeftButton moves in ActionMode.
 	-- Note: in this case pressing the RightButton _first_ will set TurnOrActionForcesState = false,
@@ -359,8 +358,8 @@ function IA:ExpectedMouselook()
 	-- Maybe all Move,Strafe bound to mouse button should do so. In that case extra logic is needed to detect when Move is caused by a mouse button.
 	if  actives.MouseTurn  then  return true, "MouseTurn:"..tostring(actives.MouseTurn)  end		-- 'TurnWithoutInteract, MoveAndSteer, ScanEnemy' , addons using MouselookStart()  end
 
-	if  actives.enableModPressed   then  return true,  'enableModPressed'   end
 	if  actives.disableModPressed  then  return false, 'disableModPressed'  end
+	if  actives.enableModPressed   then  return true,  'enableModPressed'   end
 
 	-- Any new event: SpellIsTargeting, CursorPickup, new WindowsOnScreen will delete ActionModeRecent.
 	if  actives.ActionModeRecent  then  return true, 'ActionModeRecent'  end

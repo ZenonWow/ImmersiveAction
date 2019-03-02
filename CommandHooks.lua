@@ -184,9 +184,9 @@ end
 
 function IA:ToggleActionMode(toState)
 	-- Invert current state if called without argument.
-	if toState==nil then  toState = not IsMouselooking()  end
-	-- local inverseState = not self:ExpectedMouselook()
-	-- local inverseState = not self.activeCommands.ActionMode
+	-- if toState==nil then  toState = not IsMouselooking()  end
+	-- local toState = not self:ExpectedMouselook()
+	local toState = not self.activeCommands.ActionMode
 	
 	self.activeCommands.ActionModeRecent = toState or nil
 	self:SetActionMode(toState)
@@ -273,10 +273,10 @@ end
 function IA:CURSOR_UPDATE(event, ...)
 	--[[ CURSOR_UPDATE sent when
 	1. cursor is shown (as hand) after being hidden for CameraOrSelectOrMove, TurnOrAction, MoveAndSteer, Mouselook
-	2. before UPDATE_MOUSEOVER_UNIT:  cursor changes over actionable object to  bubble (gossip) / sword (enemy) / dragon (flightmaster) / mail (mailbox) / satchel (vendor,bank,auction) / hearthstone (innkeeper) / what else?
+	2. after/before CURRENT_SPELL_CAST_CHANGED
+	3. before UPDATE_MOUSEOVER_UNIT:  cursor changes over actionable object to  bubble (gossip) / sword (enemy) / dragon (flightmaster) / mail (mailbox) / satchel (vendor,bank,auction) / hearthstone (innkeeper) / what else?
 	-- event is not sent twice when moving over an actionable object:  hidden -> show hand cursor -> action cursor
 	-- event is NOT sent when hiding cursor
-	3. after/before CURRENT_SPELL_CAST_CHANGED
 	--]]
 	local actives = self.activeCommands
 	local lastState = actives.CursorPickup or actives.SpellIsTargeting
