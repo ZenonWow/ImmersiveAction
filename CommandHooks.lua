@@ -186,7 +186,8 @@ function IA:ToggleActionMode(toState)
 	-- Invert current state if called without argument.
 	-- if toState==nil then  toState = not IsMouselooking()  end
 	-- local toState = not self:ExpectedMouselook()
-	local toState = not self.activeCommands.ActionMode
+	-- local toState = not self.activeCommands.ActionMode
+	local toState = not self.lastMouselook
 	
 	self.activeCommands.ActionModeRecent = toState or nil
 	self:SetActionMode(toState)
@@ -194,16 +195,35 @@ function IA:ToggleActionMode(toState)
 end
 
 
+function IA:InvertMouselook(pressed)
+	-- MouseTurn in CursorMode / ReleaseCursor in ActionMode.
+	local invertTo
+	if pressed then
+		invertTo = not self.lastMouselook
+		self.activeCommands.InvertMouselookTo = invertTo
+	else
+		invertTo = self.activeCommands.InvertMouselookTo
+		self.activeCommands.InvertMouselookTo = nil
+	end
+	if invertTo then
+		self:SetCommandState('TurnWithoutInteract', pressed)
+		self:UpdateMouselook(pressed, 'TurnWithoutInteract')
+	else
+		self:SetCommandState('ReleaseCursor', pressed)
+		self:UpdateMouselook(not pressed, 'ReleaseCursor')
+	end
+end
+
 function IA:TurnWithoutInteract(pressed)
 	-- Like TurnOrAction (RightButton), without accidental interacting / pull / target change when released.
 	self:SetCommandState('TurnWithoutInteract', pressed)
-	self:UpdateMouselook(true, 'TurnWithoutInteract')
+	self:UpdateMouselook(pressed, 'TurnWithoutInteract')
 end
 
 function IA:ReleaseCursor(pressed)
 	-- RightButton in ActionMode.
 	self:SetCommandState('ReleaseCursor', pressed)
-	self:UpdateMouselook(false, 'ReleaseCursor')
+	self:UpdateMouselook(not pressed, 'ReleaseCursor')
 end
 
 --[[

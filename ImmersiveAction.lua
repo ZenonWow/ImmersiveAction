@@ -10,8 +10,7 @@ ActionControls..  found it..  ImmersiveActionControls  ImmersiveActionMode  Imme
 ImmersiveControls  ImmersionControls  ImmersionCamera
 
 Actually you can be in CursorMode while in ActionMode by pressing RightButton.
-Pressing LeftButton will go into CameraMode or start moving (MoveAndSteer) in ActionMode,
-depending on the setting of actionModeMoveWithCameraButton.
+Pressing LeftButton will go into CameraMode or start moving (MoveAndSteer) in ActionMode.
 
 ImmersiveAction
 CameraMode

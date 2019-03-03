@@ -10,6 +10,7 @@ BANK, etc. events:  support any bag addon
 auction,tradeskill ditto
 
 
+function IA:ToggleActionMode(toState)  -- TODO: Implement in secure context.
 
 
 /dump GetAddOnMetadata('oUF_Mlight','SavedVariablesPerCharacter')
@@ -17,4 +18,12 @@ auction,tradeskill ditto
 /dump GetAddOnMetadata('oUF_Mlight','OptionalDeps')
 /dump GetAddOnMetadata('oUF_Mlight','X-Load-OnlyOne')
 /dump GetAddOnMetadata('oUF_MovableFrames','X-SavedVariables')
+
+/run oUF_MlightPlayer:EnableMouse ( false )   TODO: clickthrough
+
+
+
+/dump IA.HookedFrames.InterfaceOptionsFrame
+disableMod survives release?
+
 

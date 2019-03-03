@@ -24,7 +24,8 @@
 
 	<Binding name="TurnWithoutInteract" runOnUp="true" >
 		-- Turn without Interacting. Used when we don't want the RightButton to Interact upon release.
-		ImmersiveAction:TurnWithoutInteract(keystate == 'down')
+		-- ImmersiveAction:TurnWithoutInteract(keystate == 'down')
+		ImmersiveAction:InvertMouselook(keystate == 'down')
 	</Binding>
 
 	<Binding name="LookBackWhilePushed" runOnUp="true" >

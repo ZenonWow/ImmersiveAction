@@ -14,9 +14,10 @@ local SpellIsTargeting,GetCursorInfo,GetUnitSpeed = SpellIsTargeting,GetCursorIn
 /run ImmersiveAction:ResetState()
 -- Cause of ImmersiveAction:
 /dump ImmersiveAction.db.profile.enableWithMoveKeys, ImmersiveAction.db.profile.enableAfterBothButtons, ImmersiveAction.db.profile.enableAfterMoveAndSteer
-/dump ImmersiveAction.db.profile.disableWithLookAround, ImmersiveAction.db.profile.actionModeMoveWithCameraButton
+/dump ImmersiveAction.db.profile.disableWithLookAround
 /dump ImmersiveAction:ExpectedMouselook()
 /dump ImmersiveAction.WindowsOnScreen
+/dump ImmersiveAction.activeCommands.WindowOnScreen
 -- Overridden bindings:
 
 /dump ImmersiveAction.MouselookOverrideBindings = {}
@@ -55,8 +56,8 @@ IA.commandGrouping = {
 	PitchUp				= 'Pitch',
 	PitchDown			= 'Pitch',
 
-	CameraOrSelectOrMove = false,  -- Not always MouseCursor:  actionModeMoveWithCameraButton needs Mouselook to make it move.
-	-- CameraOrSelectOrMove = 'MouseCursor',  -- If actionModeMoveWithCameraButton rebinds LeftButton to MoveForward, then this is cleanly MouseCursor.
+	-- CameraOrSelectOrMove = false,
+	CameraOrSelectOrMove = 'MouseCursor',
 	TurnOrAction	= 'MouseTurn',
 	-- TurnOrAction	= false,            -- Custom: sets Mouselook to inverse of lastMouselook.
 	TurnWithoutInteract = 'MouseTurn',
@@ -103,7 +104,7 @@ function IA:SetActionMode(enable)
 
 	if actives.ActionMode == enable then  return  end
 	actives.ActionMode = enable
-	self.OverrideBindings:UpdateOverrides()
+	self.UserBindings:UpdateActionModeBindings()
 end
 
 
@@ -325,6 +326,8 @@ function IA:ExpectedMouselook()
 	-- local groups = self.commandGroups
 	local actives = self.activeCommands
 	
+	-- Decide which one is more important if commands are conflicting:
+	
 	-- Turn,Pitch is first in priority:
 	-- Requires Mouselook OFF to actually turn the character.
 	-- With Mouselook ON it acts as Strafe,Move, which is very unexpected, and usually happens at the worst time, like standing on the edge of a cliff.
@@ -332,49 +335,47 @@ function IA:ExpectedMouselook()
 	if  actives.Pitch  then  return false, actives.Pitch  end
 	
 	-- CameraOrSelectOrMove (LeftButton, B1) + TurnOrAction (RightButton, B2)  requires Mouselook ON to actually move the character.
-	-- This will be done using TurnOrActionForcesState, which takes care of a special case:
-	-- In ActionMode B2+B1=Cursor+Camera (order matters) inverts MouselookMode to FreeCameraMode, allowing look-around. 
-	-- To move press B1 or B1+B2 (depending on actionModeMoveWithCameraButton).
+	-- local moveWithCameraButton =  actives.CameraOrSelectOrMove  and  actives.ActionMode  and  self.db.profile.actionModeMoveWithCameraButton
+	-- if  moveWithCameraButton  then  return not actives.TurnOrAction, 'moveWithCameraButton'  end
 
 	-- TurnOrAction (RightButton) enables Mouselook state.
-	-- Tried to invert the Mouselook state, and found that wow silently eliminates the RightButton release event: OnMouseUp(RightButton) is not called
-	-- if RightButton was pressed when Mouselook was active.
-	-- TurnOrAction takes precedence over WindowsOnScreen, SpellIsTargeting, CursorPickup, MoveAndSteer and modifiers (Shift/Ctrl/Alt).
-	-- As long as you press the RightButton those do not matter, nor effect the behaviour.
-	-- if  nil~=actives.TurnOrActionForcesState  then  return actives.TurnOrActionForcesState, 'TurnOrAction'  end
+	-- Tried to invert the Mouselook state, and found that wow 5.4.8 silently eliminates the RightButton release event:
+	-- OnMouseUp(RightButton) is not called if RightButton was pressed when Mouselook was active. This might be fixed in Legion.
+	-- TurnOrAction takes precedence over WindowOnScreen, SpellIsTargeting, CursorPickup, MoveAndSteer and modifiers (Shift/Ctrl/Alt).
+	-- As long as the user is pressing the RightButton those do not matter, nor effect the behaviour.
 	if  actives.TurnOrAction then  return true, 'TurnOrAction'  end
 
 	-- In ActionMode (enables Mouselook mode) the LeftButton would do MoveAndSteer instead of FreeCameraMode,
 	-- just like when both buttons are pressed. To enter FreeCameraMode we disable MouselookMode.
-	-- Except when the user requested that LeftButton moves in ActionMode.
-	-- Note: in this case pressing the RightButton _first_ will set TurnOrActionForcesState = false,
-	-- then pressing LeftButton will return `false` in the above line, and enable FreeCameraMode. Uff.
-	local moveWithCameraButton =  actives.CameraOrSelectOrMove  and  actives.ActionMode  and  self.db.profile.actionModeMoveWithCameraButton
-	if  moveWithCameraButton  then  return true, 'moveWithCameraButton'  end
-	if  actives.MouseCursor  then  return false, 'MouseCursor: '..actives.MouseCursor  end
 	if  actives.CameraOrSelectOrMove  then  return false, 'CameraOrSelectOrMove'  end
 
-	-- MoveAndSteer,TargetScanEnemy,TargetNearestEnemy takes precedence over WindowsOnScreen, SpellIsTargeting and CursorPickup.
-	-- Maybe all Move,Strafe bound to mouse button should do so. In that case extra logic is needed to detect when Move is caused by a mouse button.
-	if  actives.MouseTurn  then  return true, "MouseTurn:"..tostring(actives.MouseTurn)  end		-- 'TurnWithoutInteract, MoveAndSteer, ScanEnemy' , addons using MouselookStart()  end
+	-- ReleaseCursor command.
+	if  actives.MouseCursor  then  return false, "MouseCursor: "..actives.MouseCursor  end
+
+	-- MoveAndSteer,TargetScanEnemy,TargetNearestEnemy takes precedence over WindowOnScreen, SpellIsTargeting and CursorPickup.
+	-- Maybe all Move,Strafe bound to mouse button should do so. WorldClickHandler could do that.
+	if  actives.MouseTurn  then  return true, "MouseTurn: "..tostring(actives.MouseTurn)  end		-- 'TurnWithoutInteract, MoveAndSteer, ScanEnemy' , addons using MouselookStart()  end
 
 	if  actives.disableModPressed  then  return false, 'disableModPressed'  end
 	if  actives.enableModPressed   then  return true,  'enableModPressed'   end
 
-	-- Any new event: SpellIsTargeting, CursorPickup, new WindowsOnScreen will delete ActionModeRecent.
+
+	-- State that is not currently pressed, but the result of an earlier button press (and release). These have a dynamic priority: the last one pressed takes precedence.
+
+	-- Any new event: SpellIsTargeting, CursorPickup, new WindowOnScreen will delete ActionModeRecent.
 	if  actives.ActionModeRecent  then  return true, 'ActionModeRecent'  end
 
 	-- Cursor actions:
 	if  SpellIsTargeting()	then  return false, 'SpellIsTargeting'  end
 	if  GetCursorInfo()		  then  return false, 'CursorPickup'      end
 
-	-- WindowsOnScreen are higher priority than  enableWithMoveKeys:Move,Strafe.
-	-- if  self:AnyFramesOnScreen()  then  return false, 'WindowsOnScreen'  end
-	local frame = IA:AnyFramesOnScreen()
-	if  frame  then  return false, 'WindowsOnScreen: '..tostring(frame.GetName and frame:GetName() or frame)  end
+	-- WindowOnScreen is higher priority than  enableWithMoveKeys:Move,Strafe. One can click on windows while moving with QWES / WASD.
+	-- local frame = IA:AnyFramesOnScreen()
+	-- if  frame  then  return false, "WindowOnScreen: "..tostring(frame.GetName and frame:GetName() or frame)  end
+	if  actives.WindowOnScreen  then  return false, "WindowOnScreen: "..actives.WindowOnScreen  end
 
-	-- Move,Strafe commands enable if enableWithMoveKeys and no WindowsOnScreen.
-	if  self.db.profile.enableWithMoveKeys  and  actives.MoveKeys  then
+	-- Move,Strafe commands enable if enableWithMoveKeys and no WindowOnScreen.
+	if  actives.MoveKeys  and  self.db.profile.enableWithMoveKeys  then
 		return true, "enableWithMoveKeys: "..actives.MoveKeys
 	end
 

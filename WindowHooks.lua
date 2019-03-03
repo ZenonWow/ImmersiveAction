@@ -54,12 +54,15 @@ end
 
 function IA.FrameOnShow(frame)
 	Log.Frame('  IA.FrameOnShow('.. colors.show .. frame:GetName() ..'|r)')
-	-- If already visible do nothing.
-	if  not setInsertLast(IA.WindowsOnScreen, frame)  then  return  end
 	-- If a parent is hidden, then it won't be visible.
 	if  not frame:IsVisible()  then  return  end
+	-- If already visible do nothing.
+	if  not setInsertLast(IA.WindowsOnScreen, frame)  then  return  end
+	local actives = IA.activeCommands
+	if actives.WindowOnScreen then  return  end
 
-	IA.activeCommands.ActionModeRecent = nil    -- There is a more recent event now.
+	actives.WindowOnScreen = frame:GetName() or G.tostring(frame)
+	actives.ActionModeRecent = nil    -- There is a more recent event now.
 	IA:UpdateMouselook(false, 'FrameOnShow')
 end
 
@@ -68,7 +71,10 @@ function IA.FrameOnHide(frame)
 	Log.Frame('  IA.FrameOnHide('.. colors.hide .. frame:GetName() ..'|r)')
 	local removed = removeFirst(IA.WindowsOnScreen, frame)
 	if  not removed  then  return  end
-	
+
+	-- Take first onscreen window's name.
+	local frame = IA.WindowsOnScreen[1]
+	actives.WindowOnScreen = frame and (frame:GetName() or G.tostring(frame))
 	IA:UpdateMouselook(true, 'FrameOnHide')
 end
 
@@ -80,6 +86,7 @@ end
 
 -- Take from a proper frame.
 local HookScript = IA.UserBindings.HookScript
+local SetScript = IA.UserBindings.SetScript
 local STEP = 25
 
 
@@ -125,6 +132,11 @@ function  IA:HookFrame(frameName, frame)
 	else  DBAdd('ErrHook', frameName)
 	end
 	
+	if SetScript ~= frame.SetScript then
+		DBAdd('diffSetScript', frameName)
+		print("IA:HookFrame():  "..colors.green..frameName.."|r.SetScript differs from normal Frame.SetScript")
+	end
+	
 	if  frame.IsVisible and frame:IsVisible()  then
 		Log.Frame('  IA:HookUpFrames():  '.. colors.show .. frameName ..'|r is already visible')
 		setInsertLast(IA.WindowsOnScreen, frame)
@@ -149,6 +161,7 @@ local function InitDB()
 	DB.ErrFrames = empty and {}
 	DB.GoodFrames = empty
 	DB.MissFrames = empty
+	DB.diffSetScript = empty
 end
 
 function  IA:HookUpFrames()
