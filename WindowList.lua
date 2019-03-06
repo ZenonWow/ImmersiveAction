@@ -1,6 +1,9 @@
 local G, ADDON_NAME, ADDON = _G, ...
 -- This file lists window names that need visible mousecursor so that the user can interact with them.
--- Exports:  ADDON.WindowList:  an array (list) of frame names.
+-- Exports:
+-- WindowList:  an array (list) of frame names that require mouse cursor.
+-- IgnoreMap:   a map (name->name) of frame names listed in UISpecialFrames, that do not require mouse cursor.
+
 
 
 local FoundFrames = [===[
@@ -57,9 +60,15 @@ ContainerFrame11         ContainerFrame12         ContainerFrame13         Conta
 NxSocial                 ARKINV_Frame1            WardrobeFrame            ACP_AddonList            AutoPotion_Template_Dialog
 AccountantFrame          ImmersionFrame           BagnonFrameinventory     GwCharacterWindow        GwCharacterWindowsMoverFrame
 FlightMapFrame           MovieFrame.CloseDialog   CinematicFrameCloseDialog
-AdiBagsContainer1        AdiBackpack              AdiBank                  ElephantFrame            
+AdiBagsContainer1        AdiBackpack              AdiBank                  ElephantFrame            InterfaceOptionsFrame
 ]===]
 -- To get the frame  MovieFrame.CloseDialog  use the function  getSubField(G, name)
+
+
+local IgnoreListSerialized =
+[===[
+ItemRefTooltip
+]===]
 
 
 --- getSubField(root, name)
@@ -138,19 +147,27 @@ local grepFromFrameXML =
 ------------------------------
 
 local WindowList = {}
-
 -- for name in WindowListSerialized:gmatch("[%w%.]+") do
 for name in WindowListSerialized:gmatch("[^,%s]+") do
 	WindowList[#WindowList+1] = name
 end
 
+local IgnoreMap = {}
+for name in IgnoreListSerialized:gmatch("[^,%s]+") do
+	IgnoreMap[name] = name
+end
+
+
 -- garbagecollect
 WindowListSerialized = nil
+IgnoreListSerialized = nil
 
 
 ------------------------------
--- Export  WindowList  to addon's private namespace.
--- WindowList:  an array (list) of frame names.
+-- Export  WindowList, IgnoreList  to addon's private namespace.
+-- WindowList:  an array (list) of frame names that require mouse cursor.
+-- IgnoreMap:   a map (name->name) of frame names listed in UISpecialFrames, that do not require mouse cursor.
 ------------------------------
 ADDON.WindowList = WindowList
+ADDON.IgnoreMap  = IgnoreMap
 

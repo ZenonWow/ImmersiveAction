@@ -16,6 +16,7 @@ IA.WindowsOnScreen = {}
 IA.HookedFrames = {}
 IA.FramesToHook = nil
 local FramesToHookMap = {}
+local IgnoreMap = assert(ADDON.IgnoreMap, "IgnoreMap missing from WindowList.lua")
 
 -- Monitor windows/frames that need the mousecursor.
 -- If one of these frames show up Mouselook is stopped as soon as you release any movement/mouse buttons.
@@ -32,7 +33,8 @@ local FramesToHookMap = {}
 
 
 local indexOf = LibShared.Require.indexOf
-local removeFirst = assert(G.tDeleteItem, "Bliz deleted FrameXML/Util.lua # function tDeleteItem()")
+local removeFirst = LibShared.Require.removeFirst
+-- local removeFirst = assert(G.tDeleteItem, "Bliz deleted FrameXML/Util.lua # function tDeleteItem()")  -- Not good enough. Lame bliz does not return the removed item.
 
 local function setInsertLast(t, item)
 	if  indexOf(t, item)  then  return false  end
@@ -58,9 +60,8 @@ function IA.FrameOnShow(frame)
 	if  not frame:IsVisible()  then  return  end
 	-- If already visible do nothing.
 	if  not setInsertLast(IA.WindowsOnScreen, frame)  then  return  end
-	local actives = IA.activeCommands
-	if actives.WindowOnScreen then  return  end
 
+	local actives = IA.activeCommands
 	actives.WindowOnScreen = frame:GetName() or G.tostring(frame)
 	actives.ActionModeRecent = nil    -- There is a more recent event now.
 	IA:UpdateMouselook(false, 'FrameOnShow')
@@ -74,8 +75,33 @@ function IA.FrameOnHide(frame)
 
 	-- Take first onscreen window's name.
 	local frame = IA.WindowsOnScreen[1]
+	local actives = IA.activeCommands
 	actives.WindowOnScreen = frame and (frame:GetName() or G.tostring(frame))
 	IA:UpdateMouselook(true, 'FrameOnHide')
+end
+
+
+-- Take from a proper frame.
+local HookScript = IA.UserBindings.HookScript
+
+function IA.RehookFrame(frame, script, scriptFunc)
+	local frameName = IA.HookedFrames[frame]
+	if not frameName then  return  end
+	if script ~= 'OnShow' and script ~= 'OnHide' then  return  end
+
+	if G.DEVMODE then
+		if scriptFunc then
+			print( "ImmersiveAction:  Window hook possibly overridden:  "..frameName.."."..script.."(). See next error for the source." )
+			-- Crash scriptFunc with self==nil.
+			G.xpcall(scriptFunc, G.geterrorhandler())
+		else
+			G.geterrorhandler()( "ImmersiveAction:  Window hook removed:  "..frameName.."."..script.."()" )
+		end
+	end
+
+	-- Rehook. There is a slight chance scriptFunc calls the replaced one, which would call our hook. This cannot be detected without inspecting the function code.
+	-- If it does call the original hook, then it gets called twice, but does not cause problems.
+	HookScript(frame, script, IA['Frame'..script])
 end
 
 
@@ -84,9 +110,12 @@ end
 -- Hook OnShow OnHide on a frame --
 -----------------------------------
 
--- Take from a proper frame.
-local HookScript = IA.UserBindings.HookScript
-local SetScript = IA.UserBindings.SetScript
+-- local SetScript = IA.UserBindings.SetScript
+local frameProto = getmetatable(IA.UserBindings).__index
+-- local
+SetScriptOrig = frameProto.SetScript
+hooksecurefunc(frameProto, 'SetScript', IA.RehookFrame)
+local SetScriptHooked = frameProto.SetScript
 local STEP = 25
 
 
@@ -108,11 +137,11 @@ end
 function  IA:HookFrame(frameName, frame)
 	-- G[frameName] and getglobal(frameName) does not work for child frames like "MovieFrame.CloseDialog"
 	if not frame and type(frameName)=='string' then  frame = getSubField(G, frameName)  end
-	if not frame  or  self.HookedFrames[frameName] then  return frame  end
+	if not frame  or  self.HookedFrames[frame] then  return frame  end
 	-- if not frame.GetName then  print("No GetName():", frameName, frame, type(frame))  end
 	if not frame.GetName then  DBAdd('NoGetName', frameName)  end
 
-	self.HookedFrames[frameName] = frame
+	self.HookedFrames[frame] = frameName
 	
 	if not frame.HookScript then
 		-- print("NonHook:  ", frameName)
@@ -132,9 +161,10 @@ function  IA:HookFrame(frameName, frame)
 	else  DBAdd('ErrHook', frameName)
 	end
 	
-	if SetScript ~= frame.SetScript then
+	if SetScriptHooked ~= frame.SetScript then
 		DBAdd('diffSetScript', frameName)
-		print("IA:HookFrame():  "..colors.green..frameName.."|r.SetScript differs from normal Frame.SetScript")
+		print("IA:HookFrame():  "..colors.green..frameName.."|r.SetScript() differs from normal Frame.SetScript(). See the error for source.")
+		G.xpcall(frame.SetScript, G.geterrorhandler())
 	end
 	
 	if  frame.IsVisible and frame:IsVisible()  then
@@ -145,6 +175,15 @@ function  IA:HookFrame(frameName, frame)
 	return frame
 end
 
+--[[
+[05:24:41] IA:HookFrame():  KeyBindingFrame.SetScript() differs from normal Frame.SetScript(). See the error for source.
+[05:24:41] IA:HookFrame():  ItemRefTooltip.SetScript() differs from normal Frame.SetScript(). See the error for source.
+[05:24:41] IA:HookFrame():  ColorPickerFrame.SetScript() differs from normal Frame.SetScript(). See the error for source.
+/dump KeyBindingFrame:GetObjectType(), ItemRefTooltip:GetObjectType(), ColorPickerFrame:GetObjectType()
+[06:16:30] [1]="Button",
+[06:16:30] [2]="GameTooltip",
+[06:16:30] [3]="ColorSelect"
+--]]
 
 
 ---------------------
@@ -176,12 +215,12 @@ function  IA:HookUpFrames()
 
 	-- Monitor UIPanelWindows{}:  main bliz windows.
 	for  frameName,panelInfo  in  pairs(G.UIPanelWindows)  do
-		self:HookFrame(frameName)
+		if not IgnoreMap[frameName] then  self:HookFrame(frameName)  end
 	end
 
 	-- Monitor UISpecialFrames[]:  some windows added by bliz FrameXML and also addons. No need to list them by name.
 	for  idx, frameName  in  ipairs(G.UISpecialFrames)  do
-		self:HookFrame(frameName)
+		if not IgnoreMap[frameName] then  self:HookFrame(frameName)  end
 	end
 
 	-- UIChildWindows[]:  parents should be monitored.
@@ -190,7 +229,6 @@ function  IA:HookUpFrames()
 	local FramesToHookNew = {}
 	wipe(FramesToHookMap)
 	for  idx, frameName  in  ipairs(self.FramesToHook)  do
-		-- if  self.HookedFrames[frameName]  then  print('ImmersiveAction:HookUpFrames(): frame hooked again:  ' .. frameName)  end
 		local frame = self:HookFrame(frameName)
 		if  not frame  then	
 			-- missing frames stored for a next round
