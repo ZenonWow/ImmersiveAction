@@ -303,6 +303,7 @@ function OverrideBindings:UpdateOverrideBindings(event)
 
 	ClearOverrideBindings(OverrideBindings)
 	OverrideBindings:ClearMouselookOverrideBindings()
+	UserBindings:UpdateUserBindings()
 
 	-- Capture bindings of commands for later overriding.
 	for mode,overrides in pairs(OverridesIn) do
@@ -646,10 +647,12 @@ end
 function WorldClickHandler:UpdateOverrideBindings()
 	-- local CameraBUTTON,TurnBUTTON = 'BUTTON1','BUTTON2'    --'LeftButton','RightButton'
 	-- Only the first binding is handled of each command. It cannot be rebound on the UI,so if a user binds more keys to it, definitely knows what he/she is doing.
+	--[[
 	local BUTTONs = {}
 	WorldClickHandler.BUTTONs = BUTTONs
 	BUTTONs.CAMERAORSELECTORMOVE = GetBindingKey('CAMERAORSELECTORMOVE')
 	BUTTONs.TURNORACTION         = GetBindingKey('TURNORACTION')
+	--]]
 	--[[
 	local Camera,Turn = BUTTONs.CAMERAORSELECTORMOVE, BUTTONs.TURNORACTION
 	LibShared.softassert(Camera and not Camera:match('-'), "CAMERAORSELECTORMOVE binding has modifier in it, AutoRunCombo will not work.")

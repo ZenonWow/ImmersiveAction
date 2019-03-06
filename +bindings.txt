@@ -47,6 +47,7 @@
 /run IA.UserBindings:UpdateUserBindings()
 /run IA.db.profile.bindingsInActionMode = { ["BUTTON2"] = nil, }
 /run IA.db.profile.bindingsInActionMode = { ["BUTTON2"] = "ReleaseCursor", }  -- Does not work on mop. Silently drops the release event of RightButton if pressed in Mouselook mode.
+/run IA.db.profile.bindingsInActionMode = { ["BUTTON2"] = "INTERACTNEAREST", }
 /run IA.db.profile.bindingsInGeneral = { ["BUTTON4"] = "MOVEANDSTEER", ["BUTTON2"] = "TURNORACTION", ["BUTTON5"] = "AUTORUN", ["SHIFT-BUTTON1"] = "STRAFELEFT", ["BUTTON1"] = "CAMERAORSELECTORMOVE", ["CTRL-BUTTON2"] = "INTERACTMOUSEOVER", ["SHIFT-BUTTON2"] = "STRAFERIGHT", ["CTRL-BUTTON1"] = "INTERACTNEAREST", }
 /run IA.db.profile.bindingsInGeneral = {
 ["BUTTON4"] = "MOVEANDSTEER",

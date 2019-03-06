@@ -22,9 +22,13 @@
 		ImmersiveAction:ReleaseCursor(keystate == 'down')
 	</Binding>
 
-	<Binding name="TurnWithoutInteract" runOnUp="true" >
+	<Binding name="TurnWithoutInteract" runOnUp="true" hidden="true" >
 		-- Turn without Interacting. Used when we don't want the RightButton to Interact upon release.
-		-- ImmersiveAction:TurnWithoutInteract(keystate == 'down')
+		ImmersiveAction:TurnWithoutInteract(keystate == 'down')
+	</Binding>
+
+	<Binding name="InvertMouselook" runOnUp="true" >
+		-- Turn without Interacting. Used when we don't want the RightButton to Interact upon release.
 		ImmersiveAction:InvertMouselook(keystate == 'down')
 	</Binding>
 

@@ -13,7 +13,7 @@ local SpellIsTargeting,GetCursorInfo,GetUnitSpeed = SpellIsTargeting,GetCursorIn
 /dump ImmersiveAction.activeCommands, ImmersiveAction.commandGroups
 /run ImmersiveAction:ResetState()
 -- Cause of ImmersiveAction:
-/dump ImmersiveAction.db.profile.enableWithMoveKeys, ImmersiveAction.db.profile.enableAfterBothButtons, ImmersiveAction.db.profile.enableAfterMoveAndSteer
+/dump ImmersiveAction.db.profile.enableWithMoveKeys, ImmersiveAction.db.profile.enableAfterTurning, ImmersiveAction.db.profile.enableAfterMoveAndSteer
 /dump ImmersiveAction.db.profile.disableWithLookAround
 /dump ImmersiveAction:ExpectedMouselook()
 /dump ImmersiveAction.WindowsOnScreen
@@ -100,7 +100,7 @@ local DisablesAutoRun = {
 
 function IA:SetActionMode(enable)
 	local actives = self.activeCommands
-	if not enable then  self.activeCommands.ActionModeRecent = nil  end
+	self.activeCommands.ActionModeRecent = enable or nil
 
 	if actives.ActionMode == enable then  return  end
 	actives.ActionMode = enable
@@ -201,22 +201,17 @@ function IA:CheckActionMode(cmdName, pressed)
 	-- it gives a more fluent user experience to disable/enable ActionMode automatically.
 	if not pressed then
 		if not IA.lastMouselook then
-			-- Turning the camera away from the direction your character looks (clicking LeftButton) will disable ActionMode.
+			-- Pressing LeftButton (turning the camera) will disable ActionMode.
 			-- If it stays on the first mouse movement will yank your character to the camera direction, without specific command from you.
 			-- Clicking the RightButton will still instantly turn the character to the camera direction.
 			if  cmdName=='CameraOrSelectOrMove'  and  self.db.profile.disableWithLookAround  and  not SpellIsTargeting()  then  IA:SetActionMode(false)  end
 		else
-			-- After pressing MoveAndSteer:  enable ActionMode, it feels fluent to keep turning the character with the mouse, without pressing buttons.
+			-- Pressing RightButton (turning your character) will enable ActionMode.
+			if  cmdName=='TurnOrAction'  and  self.db.profile.enableAfterTurning  then  IA:SetActionMode(true)  end
+			-- Pressing MoveAndSteer will enabled ActionMode.
+			-- It feels fluent to keep turning the character with the mouse, without pressing buttons.
 			-- If not, then it can be disabled in settings.
 			if  cmdName=='MoveAndSteer' and  self.db.profile.enableAfterMoveAndSteer  then  IA:SetActionMode(true)  end
-			-- After pressing LeftButton and RightButton together:  ActionMode will stay enabled.
-			-- It's the same as MoveAndSteer but with two buttons. Can be enabled separately.
-			-- Rule:  one button released while the other is pressed.
-			if self.db.profile.enableAfterBothButtons then
-				if  cmdName=='CameraOrSelectOrMove' and self.TurnOrAction
-				or  cmdName=='TurnOrAction' and self.CameraOrSelectOrMove
-				then  IA:SetActionMode(true)  end
-			end
 		end
 	end
 end

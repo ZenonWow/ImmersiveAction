@@ -27,3 +27,11 @@ function IA:ToggleActionMode(toState)  -- TODO: Implement in secure context.
 disableMod survives release?
 
 
+/run DebugPanel:HookScript('OnShow', IA.FrameOnShow)
+/run print(DebugPanel:GetScript('OnShow'), IA.FrameOnShow)
+
+/run collectgarbage()  print("Mem KB before:", collectgarbage("count"))  for i=1,10000 do CreateFrame('Frame') end  collectgarbage()  print("Mem KB after:", collectgarbage("count"))
+
+AceHook:  -- TODO:  test if  issecurevariable(method) === issecurevariable(_G, method)
+
+

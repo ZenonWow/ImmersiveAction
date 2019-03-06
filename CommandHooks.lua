@@ -15,7 +15,9 @@ BINDING_HEADER_ImmersiveAction    = "Immersive Action"
 -- Custom commands
 BINDING_NAME_INTERACTNEAREST      = "Target and interact closest friendly npc"
 BINDING_NAME_ToggleActionMode     = "Toggle Action mode"
+BINDING_NAME_ReleaseCursor        = "Release cursor"
 BINDING_NAME_TurnWithoutInteract  = "Turn without Interacting"
+BINDING_NAME_InvertMouselook      = "Invert mouselook"
 
 -- Builtin commands without a description
 BINDING_NAME_CAMERAORSELECTORMOVE = "Rotate Camera     (LeftButton default)"
@@ -189,7 +191,6 @@ function IA:ToggleActionMode(toState)
 	-- local toState = not self.activeCommands.ActionMode
 	local toState = not self.lastMouselook
 	
-	self.activeCommands.ActionModeRecent = toState or nil
 	self:SetActionMode(toState)
 	self:UpdateMouselook(toState, 'ToggleActionMode')
 end

@@ -15,9 +15,9 @@ IA.defaultSettings = {
 	profile = {
 		enabledOnLogin = false,
 		enableWithMoveKeys = false,
-		enableAfterBothButtons = true,
-		enableAfterMoveAndSteer = true,
 		disableWithLookAround = true,
+		enableAfterTurning = true,
+		enableAfterMoveAndSteer = true,
 		-- actionModeMoveWithCameraButton = false,
 		preventSingleClickMouseover = true,
 		preventSingleClick = false,
@@ -103,6 +103,7 @@ Config.commands = {
 		'TURNORACTION',							-- Right Button default:  Mouselook if hold, InteractMouseover if clicked
 		'TurnWithoutInteract',			-- Turn with mouse, no actions
 		'ReleaseCursor',            -- Switch back to CursorMode while pressed.
+		'ToggleActionMode',
 
 		-- Interact
 		'INTERACTMOUSEOVER',				-- select with mouse + interact, no turning or camera
@@ -278,9 +279,9 @@ Config.optionsTableList = {
 	-- optBind("X1", ""),
 	optToggle("enabledOnLogin", "Enable on login", "Surprise your little brother/sister next time he/she logs in."),
 	optToggle("enableWithMoveKeys", "Enable while moving", "While pressing any movement key the mouse will turn the camera and your character."),
-	optToggle("enableAfterBothButtons", "Enable with both mouse buttons", "After pressing LeftButton and RightButton together:  ActionMode will stay enabled."),
-	optToggle("enableAfterMoveAndSteer", "Enable with Move and steer", "After pressing MoveAndSteer:  ActionMode will stay enabled."),
-	optToggle("disableWithLookAround", "Disable with looking around", "Clicking LeftButton (turning the camera away from the direction your character looks) will disable ActionMode."),
+	optToggle("disableWithLookAround", "Disable with Left click", "Pressing LeftButton (turning the camera) will disable ActionMode."),
+	optToggle("enableAfterTurning", "Enable with Right click", "Pressing RightButton (turning your character) will enable ActionMode."),
+	optToggle("enableAfterMoveAndSteer", "Enable with Move and steer", "Pressing MoveAndSteer will enabled ActionMode."),
 	-- optToggle("actionModeMoveWithCameraButton", "Move with LeftButton", "Effective in ActionMode:  You will move forward while pressing LeftButton. Try RightButton as well, and the two together (MouseCursorMode, LookAroundMode)"),
 	optToggle("preventSingleClickMouseover", "Prevent accidental rightclick over units", "Single rightclick over units won't attack/interact the mouseover unit.\n".."Double-click to interact."),
 	optToggle("preventSingleClick", "Prevent accidental rightclick everywhere", "Single rightclick won't attack/interact or click objects.\n".."Double-click to interact."),

@@ -138,7 +138,8 @@ function IA:OnInitialize()
 	-- self.db.RegisterCallback(self, "OnDatabaseShutdown", "OnLogout")
 	
 	self.activeCommands.ActionMode = self.db.profile.enabledOnLogin
-	self:ProfileChanged()
+	-- Initial UpdateOverrideBindings() run in OnEnable()
+	-- self:ProfileChanged()
 end	
 
 
@@ -202,7 +203,8 @@ end
 
 function IA:ProfileChanged()
 	-- Update loaded user binding overrides.
-	self.UserBindings:UpdateUserBindings()
+	-- self.UserBindings:UpdateUserBindings()
+	self:UpdateOverrideBindings()
 end
 
 
