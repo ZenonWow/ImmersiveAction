@@ -247,6 +247,7 @@ function IA:RegisterCommandEvents(enable)
 		self:RegisterEvent('MODIFIER_STATE_CHANGED')
 		self:RegisterEvent('CURRENT_SPELL_CAST_CHANGED')
 		self:RegisterEvent('CURSOR_UPDATE')
+		self:RegisterEvent('PET_BAR_UPDATE', 'CURSOR_UPDATE')
 		-- self:RegisterEvent('PET_BAR_UPDATE')
 		-- self:RegisterEvent('ACTIONBAR_UPDATE_STATE')
 		self:RegisterEvent('PLAYER_STARTED_MOVING')
@@ -255,7 +256,7 @@ function IA:RegisterCommandEvents(enable)
 		self:UnregisterEvent('MODIFIER_STATE_CHANGED')
 		self:UnregisterEvent('CURRENT_SPELL_CAST_CHANGED')
 		self:UnregisterEvent('CURSOR_UPDATE')
-		-- self:UnregisterEvent('PET_BAR_UPDATE')
+		self:UnregisterEvent('PET_BAR_UPDATE')
 		-- self:UnregisterEvent('ACTIONBAR_UPDATE_STATE')
 		self:UnregisterEvent('PLAYER_STARTED_MOVING')
 		self:UnregisterEvent('PLAYER_STOPPED_MOVING')
@@ -308,7 +309,7 @@ function IA:CURSOR_UPDATE(event, ...)
 	-- actives.CursorObjectOrSpellTargeting = actives.CursorPickup or actives.SpellIsTargeting
 	local newState = actives.CursorPickup or actives.SpellIsTargeting
 
-	Log.Event(event, '  -> cursorAction=' .. IA.colorBoolStr(newState, false))
+	Log.Event(event, '  -> CursorPickup=' .. IA.colorBoolStr(actives.CursorPickup, false) .. '  SpellIsTargeting=' .. IA.colorBoolStr(actives.SpellIsTargeting, false))
 	if lastState ~= newState then
 		if newState then  actives.ActionModeRecent = nil  end    -- There is a more recent event now.
 		self:UpdateMouselook(not newState, 'CURSOR_UPDATE')
@@ -336,15 +337,11 @@ IA.CURRENT_SPELL_CAST_CHANGED = IA.UpdateSpellIsTargeting
 	--ACTIONBAR_UPDATE_STATE
 --]]
 
---[[ No need for these to my best knowledge. CURSOR_UPDATE handles it.
 function IA:PET_BAR_UPDATE(event)
-	if  self.activeCommands.CursorObjectOrSpellTargeting  then
-		Log.Event(event, '  -> ResetCursor()')
-		ResetCursor()
-		-- Triggers CURSOR_UPDATE, that will do self:UpdateMouselook(not cursorAction, event)
-	end
+	-- Log.Event(event, '  -> CursorPickup=' .. IA.colorBoolStr(actives.CursorPickup, false) .. '  SpellIsTargeting=' .. IA.colorBoolStr(actives.SpellIsTargeting, false))
 end
 
+--[[ No need for these to my best knowledge. CURSOR_UPDATE handles it.
 function IA:ACTIONBAR_UPDATE_STATE(event)
 	if  self.activeCommands.CursorObjectOrSpellTargeting  then
 		Log.Event(event, '  -> ResetCursor()')
