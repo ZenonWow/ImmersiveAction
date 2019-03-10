@@ -67,7 +67,7 @@ IA.commandGrouping = {
 	-- TargetScanEnemy, TargetNearestEnemy:
 	TargetPriorityHighlight	= 'MouseTurn',
 	Mouselook     = 'MouseTurn',      -- Capture addons' usage and take into account.
-	MoveForwardTurns = 'MouseTurn',
+	-- MoveForwardTurns = 'MouseTurn',
 
 	MoveForward		= 'MoveKeys',
 	MoveBackward	= 'MoveKeys',

@@ -510,7 +510,8 @@ function WorldClickHandler.OnMouseDown(frame, button)
 	-- Test AUTORUN override. AUTORUN is very picky, BUTTON1-2 just refuses it, modifiers 'sometimes' work. Combos... never?
 	-- if key == 'BUTTON1' then  SetOverrideBinding(self, true, 'BUTTON4', 'AUTORUN')  end
 	
-	if command=='MOVEFORWARD' then  IA:SetCommandState('MoveForwardTurns', true)  end
+	-- if command=='MOVEFORWARD' then  IA:SetCommandState('MoveForwardTurns', true)  end
+	if command=='MOVEFORWARD' then  IA:SetCommandState('MoveAndSteer', true)  end
 
 	-- Cast the spell on LeftButton even if ActionMode was turned on after starting spell targeting.
 	if command=='CAMERAORSELECTORMOVE' and G.SpellIsTargeting() and IA.IsMouselooking() then
@@ -542,7 +543,9 @@ function WorldClickHandler.OnMouseUp(frame, button)
 		command = G.GetBindingByKey(mod..key)
 	end
 
-	if command=='MOVEFORWARD' then  IA:SetCommandState('MoveForwardTurns', false)  end
+	-- if command=='MOVEFORWARD' then  IA:SetCommandState('MoveForwardTurns', false)  end
+	-- Trigger enableAfterMoveAndSteer.
+	if command=='MOVEFORWARD' then  IA:SetCommandState('MoveAndSteer', true)  end
 
 	-- if  key == self.BUTTONs.TURNORACTION  then
 	if command=='TURNORACTION' or command=='INTERACTMOUSEOVER' then
