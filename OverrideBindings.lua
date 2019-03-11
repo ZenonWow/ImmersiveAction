@@ -73,7 +73,7 @@ UserBindings:Hide()
 function UserBindings:SetUserBinding(mode, key, toCmd)
 	-- local wasCmd = IA.db.profile['bindingsIn'..mode][key]
 	IA.db.profile['bindingsIn'..mode][key] = toCmd
-	-- print("UserBindings:", key, "   ==>   ", toCmd)
+	Log.Binding("UserBindings:", key, "   ==>   ", toCmd)
 	SetOverrideBinding(self, false, key, toCmd)
 end
 
@@ -84,7 +84,7 @@ function UserBindings:ApplyBindings(keyBindings)
 
 	-- Set new overrides.
 	for key,toCmd in pairs(keyBindings) do  if toCmd~='' then
-		-- print("UserBindings:, key, "   ==>   ", toCmd)
+		Log.Binding("UserBindings:", key, "   ==>   ", toCmd)
 		SetOverrideBinding(self, false, key, toCmd)
 	end end -- for if
 end
@@ -97,7 +97,7 @@ end
 
 
 function UserBindings:UpdateUserBindings()
-	print("UserBindings:UpdateUserBindings()")
+	Log.Binding("UserBindings:UpdateUserBindings()")
 	-- First happens in response to ADDON_LOADED. Later on ProfileChanged()  and  when a binding is changed in Config.
 	--[[
 	MouselookStop() won't release command keys that are pressed, i.e. received "down" event, but not "up".
@@ -136,7 +136,7 @@ function UserBindings:UpdateActionModeBindings()
 	for key,toCmd in pairs(keyBindings) do  if toCmd~='' then
 		if not ActionMode then  toCmd = keyBindingsGeneral[key]  end
 		if toCmd == '' then  toCmd = nil  end
-		print("UpdateActionModeBindings():", key, "   ==>   ", toCmd)
+		Log.Binding("UpdateActionModeBindings():", key, "   ==>   ", toCmd)
 		SetOverrideBinding(self, false, key, toCmd)
 	end end -- for if
 end
@@ -243,7 +243,7 @@ function OverrideBindings:UpdateOverrides(enable)
 	if InCombatLockdown() then
 		Log.State("OverrideBindings:UpdateOverrides() ignored:  Can't update bindings when InCombatLockdown()")
 	else
-		print("OverrideBindings:UpdateOverrides("..IA.colorBoolStr(enable, true)..")")
+		Log.Binding("OverrideBindings:UpdateOverrides("..IA.colorBoolStr(enable, true)..")")
 		if enable==nil then  enable = true  end
 		local AutoRun =  enable~=false  and  IA.activeCommands.AutoRun
 		self:OverrideCommand('MOVEANDSTEER', AutoRun and 'TurnWithoutInteract' or 'MOVEFORWARD')
@@ -299,7 +299,7 @@ end
 ------------------------------
 
 function OverrideBindings:UpdateOverrideBindings(event)
-	print("OverrideBindings:UpdateOverrideBindings()")
+	Log.Binding("OverrideBindings:UpdateOverrideBindings()")
 
 	ClearOverrideBindings(OverrideBindings)
 	OverrideBindings:ClearMouselookOverrideBindings()
@@ -408,7 +408,7 @@ local function UnhookS(self, target, scriptName)
 end
 
 local function HookS(self, target, scriptName, postFunc)
-	-- print('HookS', target, scriptName, not not postFunc)
+	-- Log.Init('HookS', target, scriptName, not not postFunc)
 	if not postFunc then  return UnhookS(self, target, scriptName)  end
 	if self.hookedS[target][scriptName] then  return false  end
 	self.originalS[target][scriptName] = target:GetScript(scriptName)
@@ -446,17 +446,17 @@ end
 
 function WorldClickHandler.OnMouseWheel(frame, direction)
 	local self = WorldClickHandler
-	print(frame, IA.coloredKey('MouseWheel', direction < 0))
+	Log.Button(frame, IA.coloredKey('MouseWheel', direction < 0))
 end
 
 function WorldClickHandler.UIOnMouseDown(frame, button)
 	local self = WorldClickHandler
-	print("UIParent", IA.coloredKey(button, true))
+	Log.Button("UIParent", IA.coloredKey(button, true))
 end
 
 function WorldClickHandler.UIOnMouseUp(frame, button)
 	local self = WorldClickHandler
-	print("UIParent", IA.coloredKey(button, false))
+	Log.Button("UIParent", IA.coloredKey(button, false))
 end
 
 
@@ -501,9 +501,9 @@ function WorldClickHandler.OnMouseDown(frame, button)
 	local command,mod,key = GetBindingByButton(button)
 	local stuck = self:PressKey(key, command)
 
-	print()
+	Log.Button()
 	self.counter = (self.counter or 0) + 1
-	print("        ", self.counter, frame:GetName(), IA.coloredKey(button, true), mod..key, command, stuck and IA.colors.red.."STUCK key:|r "..stuck or "")
+	Log.Button("        ", self.counter, frame:GetName(), IA.coloredKey(button, true), mod..key, command, stuck and IA.colors.red.."STUCK key:|r "..stuck or "")
 
 	if self.prevClickToMove then  SetCVar("AutoInteract", self.prevClickToMove) ; self.prevClickToMove = nil  end
 	
@@ -526,7 +526,7 @@ function WorldClickHandler.OnMouseDown(frame, button)
 	-- if button == 'RightButton' and IA.IsMouselooking() then
 	if command == 'ReleaseCursor' and IA.IsMouselooking() then
 		-- Let it believe it's turning on Mouselook.
-		print("Try to fix RightButton stuck bug.")
+		Log.Button("Try to fix RightButton stuck bug.")
 		IA.MouselookStop()
 		IA.lastMouselook = false
 	end
@@ -537,7 +537,7 @@ function WorldClickHandler.OnMouseUp(frame, button)
 	local self = WorldClickHandler
 	local mod,key = GetBindingModifier(), MapButtonToKey[button]
 	local command = self:ReleaseKey(key)
-	print("        ", self.counter, frame:GetName(), IA.coloredKey(button, false), mod..key, command or IA.colors.red.."NOT pressed|r")
+	Log.Button("        ", self.counter, frame:GetName(), IA.coloredKey(button, false), mod..key, command or IA.colors.red.."NOT pressed|r")
 
 	if not command then
 		command = G.GetBindingByKey(mod..key)
@@ -593,17 +593,17 @@ function WorldClickHandler:FixAccidentalRightClick(frame, button)
 	if  now-last > doubleClickInterval then
 		-- NOT DoubleClick
 		if  self.wasMouseover and IA.db.profile.preventSingleClickMouseover  or  IA.db.profile.preventSingleClick  then
-			print("IA.FixRightClick: MouselookStop()")
+			Log.Button("IA.FixRightClick: MouselookStop()")
 			IA.MouselookStop()    -- Trick TurnOrActionStop() into believing it was not pressed.
 		end
   elseif  IA.db.profile.runToDoubleClickMouseover  and  self.wasMouseover
 	or  self.RunToDoubleClickGround  and  not self.wasMouseover
   then  --  and not InCombatLockdown() then
-		print("IA.FixRightClick: runToDoubleClickMouseover")
+		Log.Button("IA.FixRightClick: runToDoubleClickMouseover")
 		local prevClickToMove = GetCVar('AutoInteract')    --  Adequately named cvar.
 		if  prevClickToMove ~= '1'  then  SetCVar('AutoInteract', '1') ; self.prevClickToMove = prevClickToMove  end
 	else
-		print("IA.FixRightClick: Interact")
+		Log.Button("IA.FixRightClick: Interact")
 	end
 end
 

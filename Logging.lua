@@ -29,12 +29,22 @@ local Log = IA.Log or {}  ;  IA.Log = Log
 IA.logging = {
 	-- all = false,		-- set to false/true to override individual event settings.
 	-- all = true,
-	State   = true,
-	-- Update  = true,
+	-- Logging of initialization, installing hooks: one-time necessities.
+	Init    = false,
+	-- Logging of automated changes to bindings.
+	-- Binding  = true,
+	-- Logging of mouse button presses. No keyboard buttons yet. Buttons translate to commands they are bound to.
+	-- Button  = true,
+	-- Logging of hooked commands. @see IA:ProcessCommand()
 	-- Command = true,
+	-- Logging of IA:UpdateMouselook().
+	-- Update  = true,
+	-- Logging of the resulting Mouselook state change.
+	State   = true,
+	-- Logging of unexpected states, possibly stuck keys.
 	-- Anomaly = false,
 	Anomaly = true,
-	Init    = false,
+	-- Logging of frames shown and hidden.
 	-- Frame   = true,
 }
 IA.logging.Event = {
@@ -61,11 +71,13 @@ function IA.logging:_onevent(event)
 	return  self.all ~= false  and  self.Event  and  self.Event:_on(event)
 end
 
-makeLogFunc(Log, IA.logging, 'State'  )
-makeLogFunc(Log, IA.logging, 'Update' )
-makeLogFunc(Log, IA.logging, 'Command')
-makeLogFunc(Log, IA.logging, 'Anomaly')
 makeLogFunc(Log, IA.logging, 'Init'   )
+makeLogFunc(Log, IA.logging, 'Binding')
+makeLogFunc(Log, IA.logging, 'Button' )
+makeLogFunc(Log, IA.logging, 'Command')
+makeLogFunc(Log, IA.logging, 'Update' )
+makeLogFunc(Log, IA.logging, 'State'  )
+makeLogFunc(Log, IA.logging, 'Anomaly')
 makeLogFunc(Log, IA.logging, 'Frame'  )
 
 function Log.Event(event, extraMessage)
