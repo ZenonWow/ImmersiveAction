@@ -98,14 +98,31 @@ local DisablesAutoRun = {
 -- Enable state
 ------------------
 
-function IA:SetActionMode(enable)
+function IA:GetActiveActionMode()
 	local actives = self.activeCommands
-	self.activeCommands.ActionModeRecent = enable or nil
+	return  actives.ActionModeRecent  or  not actives.ActionModeTempCam and not actives.TempCursor and not actives.WindowOnScreen and actives.ActionMode
+end
 
-	if actives.ActionMode == enable then  return  end
-	actives.ActionMode = enable
+function IA:SetActionMode(enable, permanent)
+	local actives = self.activeCommands
+	if permanent then  actives.ActionMode = enable  end
+	actives.ActionModeTempCam = (enable==false) and not permanent
+	actives.ActionModeRecent = enable and actives.ActionMode
 	self.UserBindings:UpdateActionModeBindings()
 end
+
+IA.SetActionModeTemp = IA.SetActionMode
+
+--[[
+function IA:SetActionModeTemp(enable)
+	local actives = self.activeCommands
+	if actives.ActionModeRecent == enable then  return  end
+
+	self.activeCommands.ActionModeRecent = enable
+	self.activeCommands.ActionModeTempCam = enable==false
+	self.UserBindings:UpdateActionModeBindings(enable)
+end
+--]]
 
 
 
@@ -199,19 +216,29 @@ end
 function IA:CheckActionMode(cmdName, pressed)
 	-- Update ActionMode in response to certain inputs, when
 	-- it gives a more fluent user experience to disable/enable ActionMode automatically.
-	if not pressed then
-		if not IA.lastMouselook then
-			-- Pressing LeftButton (turning the camera) will disable ActionMode.
-			-- If it stays on the first mouse movement will yank your character to the camera direction, without specific command from you.
+	if pressed then
+		if  cmdName=='TurnOrAction'  then  self.timeTurnOrAction = GetTime()  end
+	else
+		if not self.lastMouselook then
+			-- Pressing LeftButton (turning the camera) will disable ActionMode temporarily.
+			-- If it would stay on, then the first mouse movement would yank your character to the camera direction, without specific command from you.
 			-- Clicking the RightButton will still instantly turn the character to the camera direction.
-			if  cmdName=='CameraOrSelectOrMove'  and  self.db.profile.disableWithLookAround  and  not SpellIsTargeting()  then  IA:SetActionMode(false)  end
+			if  cmdName=='CameraOrSelectOrMove'  and  self.db.profile.disableWithLookAround  and  not SpellIsTargeting()  then
+				self:SetActionModeTemp(false)
+			end
 		else
-			-- Pressing RightButton (turning your character) will enable ActionMode.
-			if  cmdName=='TurnOrAction'  and  self.db.profile.enableAfterTurning  then  IA:SetActionMode(true)  end
-			-- Pressing MoveAndSteer will enabled ActionMode.
+			-- Pressing RightButton (turning your character) will enable ActionMode, if it was disabled temporarily.
+			if  cmdName=='TurnOrAction'  and  self.db.profile.enableAfterTurning
+			and  self.timeTurnOrAction  and  0.2 < GetTime() - self.timeTurnOrAction  then
+					self.timeTurnOrAction = nil
+					self:SetActionModeTemp(true)
+			end
+			-- Pressing MoveAndSteer will enable ActionMode, if it was disabled temporarily.
 			-- It feels fluent to keep turning the character with the mouse, without pressing buttons.
 			-- If not, then it can be disabled in settings.
-			if  cmdName=='MoveAndSteer' and  self.db.profile.enableAfterMoveAndSteer  then  IA:SetActionMode(true)  end
+			if  cmdName=='MoveAndSteer'  and  self.db.profile.enableAfterMoveAndSteer  then
+				self:SetActionModeTemp(true)
+			end
 		end
 	end
 end
@@ -358,15 +385,15 @@ function IA:ExpectedMouselook()
 	-- State that is not currently pressed, but the result of an earlier button press (and release). These have a dynamic priority: the last one pressed takes precedence.
 
 	-- Any new event: SpellIsTargeting, CursorPickup, new WindowOnScreen will delete ActionModeRecent.
-	if  actives.ActionModeRecent  then  return true, 'ActionModeRecent'  end
+	if  actives.ActionModeRecent   then  return true,  'ActionModeRecent'   end
+	if  actives.ActionModeTempCam  then  return false, 'ActionModeTempCam'  end
 
 	-- Cursor actions:
 	if  SpellIsTargeting()	then  return false, 'SpellIsTargeting'  end
 	if  GetCursorInfo()		  then  return false, 'CursorPickup'      end
+	-- if  actives.TempCursor  then  return false, 'TempCursor'        end
 
 	-- WindowOnScreen is higher priority than  enableWithMoveKeys:Move,Strafe. One can click on windows while moving with QWES / WASD.
-	-- local frame = IA:AnyFramesOnScreen()
-	-- if  frame  then  return false, "WindowOnScreen: "..tostring(frame.GetName and frame:GetName() or frame)  end
 	if  actives.WindowOnScreen  then  return false, "WindowOnScreen: "..actives.WindowOnScreen  end
 
 	-- Move,Strafe commands enable if enableWithMoveKeys and no WindowOnScreen.

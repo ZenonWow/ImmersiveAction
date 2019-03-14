@@ -63,7 +63,7 @@ function IA.FrameOnShow(frame)
 
 	local actives = IA.activeCommands
 	actives.WindowOnScreen = frame:GetName() or G.tostring(frame)
-	actives.ActionModeRecent = nil    -- There is a more recent event now.
+	IA:SetActionModeTemp(nil)    -- There is a more recent event now.
 	IA:UpdateMouselook(false, 'FrameOnShow')
 end
 
@@ -91,11 +91,14 @@ function IA.RehookFrame(frame, script, scriptFunc)
 
 	if G.DEVMODE then
 		if scriptFunc then
-			print( "ImmersiveAction:  Window hook possibly overridden:  "..frameName.."."..script.."(). See next error for the source." )
+			print( "ImmersiveAction:  Window hook possibly overridden, but rehooked:  "..frameName.."."..script.."()." )
 			-- Crash scriptFunc with self==nil.
-			G.xpcall(scriptFunc, G.geterrorhandler())
+			if G.DEVMODE.WindowHooks then
+				print("See next error for the source.")
+				G.xpcall(scriptFunc, G.geterrorhandler())
+			end
 		else
-			G.geterrorhandler()( "ImmersiveAction:  Window hook removed:  "..frameName.."."..script.."()" )
+			print( "ImmersiveAction:  Window hook removed, but rehooked:  "..frameName.."."..script.."()" )
 		end
 	end
 
@@ -163,8 +166,8 @@ function  IA:HookFrame(frameName, frame)
 	
 	if SetScriptHooked ~= frame.SetScript then
 		DBAdd('diffSetScript', frameName)
-		print("IA:HookFrame():  "..colors.green..frameName.."|r.SetScript() differs from normal Frame.SetScript(). See the error for source.")
-		G.xpcall(frame.SetScript, G.geterrorhandler())
+		-- print("IA:HookFrame():  "..colors.green..frameName.."|r.SetScript() differs from normal Frame.SetScript(). See the error for source.")
+		-- G.xpcall(frame.SetScript, G.geterrorhandler())
 	end
 	
 	if  frame.IsVisible and frame:IsVisible()  then

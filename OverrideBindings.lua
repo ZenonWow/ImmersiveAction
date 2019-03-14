@@ -127,7 +127,12 @@ end
 
 
 function UserBindings:UpdateActionModeBindings()
-	local ActionMode = IA.activeCommands.ActionMode
+	if InCombatLockdown() then  return  end  -- PLAYER_REGEN_ENABLED() will update bindings.
+
+	local ActionMode = IA:GetActiveActionMode()
+	if self.inActionMode == ActionMode then  return  end
+	self.inActionMode = ActionMode
+
 	local keyBindings = IA.db.profile['bindingsIn'..'ActionMode']
 	local keyBindingsGeneral = IA.db.profile['bindingsIn'..'General']
 	if not keyBindings then  return  end

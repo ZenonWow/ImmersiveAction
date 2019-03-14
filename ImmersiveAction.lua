@@ -137,7 +137,6 @@ function IA:OnInitialize()
 	self.db.RegisterCallback(self, "OnProfileReset", "ProfileChanged")
 	-- self.db.RegisterCallback(self, "OnDatabaseShutdown", "OnLogout")
 	
-	self.activeCommands.ActionMode = self.db.profile.enabledOnLogin
 	-- Initial UpdateOverrideBindings() run in OnEnable()
 	-- self:ProfileChanged()
 end	
@@ -155,6 +154,8 @@ function IA:OnEnable()
 	self.OverrideBindings:Enable(true)
 	self.InteractNearest:Enable(true)
 
+	self:SetActionMode(self.db.profile.enabledOnLogin, true)
+
 	-- Find frames now, after addons loaded.
 	self:HookUpFrames()
 	-- Find missing frames when delayed loading any addon.
@@ -165,7 +166,7 @@ function IA:OnEnable()
 	-- Targeting and questing shows cursor.
 	self:RegisterWindowEvents(true)
 	
-	IA.Config:InitOptionsFrame()
+	self.Config:InitOptionsFrame()
 end
 
 

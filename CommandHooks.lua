@@ -95,24 +95,24 @@ local UniqueHooks = {}
 function UniqueHooks.ToggleAutoRun()  IA:SetCommandState('AutoRun', not IA.activeCommands.AutoRun)  end
 function UniqueHooks.StartAutoRun()  IA:SetCommandState('AutoRun', true)  end
 function UniqueHooks.StopAutoRun()  IA:SetCommandState('AutoRun', false)  end
-function UniqueHooks.PetMoveTo()  IA:UpdateSpellIsTargeting('PetMoveTo')  end    -- Pet move targeting.
--- function UniqueHooks.UseAction()  IA:UpdateSpellIsTargeting('UseAction')  end    -- Possible ground targeting spell.
+function UniqueHooks.PetMoveTo()  IA:UpdateTempCursor('PetMoveTo')  end    -- Pet move targeting.
+-- function UniqueHooks.UseAction()  IA:UpdateTempCursor('UseAction')  end    -- Possible ground targeting spell.
 
 
-function IA:UpdateSpellIsTargeting(cmdName)
+function IA:UpdateTempCursor(cmdName)
 	local actives = self.activeCommands
-	local targeting = SpellIsTargeting()
-	if actives.SpellIsTargeting == targeting then  return  end
+	local TempCursor = GetCursorInfo() or SpellIsTargeting()
+	if actives.TempCursor == TempCursor then  return  end
 
-	actives.SpellIsTargeting = targeting
-	if targeting then  actives.ActionModeRecent = nil  end    -- There is a more recent event now.
-	self:UpdateMouselook(false, cmdName)
+	actives.TempCursor = TempCursor
+	if TempCursor then  self:SetActionModeTemp(nil)  end    -- There is a more recent event now.
+	self:UpdateMouselook(not TempCursor, cmdName)
 end
 
 
 function IA:CommandHook(cmdName, pressed, event)
 	-- Update SpellIsTargeting after pressing or releasing LeftButton.
-	if cmdName == 'CameraOrSelectOrMove' then  self.activeCommands.SpellIsTargeting = SpellIsTargeting()  end
+	if cmdName == 'CameraOrSelectOrMove' then  self.activeCommands.TempCursor = GetCursorInfo() or SpellIsTargeting()  end
 
 	self:ProcessCommand(cmdName, pressed)
 	-- if self.commandsHooked[cmdName]=='MouseTurn' then  possibleTransition = pressed  else  possibleTransition = not pressed  end
@@ -191,7 +191,7 @@ function IA:ToggleActionMode(toState)
 	-- local toState = not self.activeCommands.ActionMode
 	local toState = not self.lastMouselook
 	
-	self:SetActionMode(toState)
+	self:SetActionMode(toState, true)
 	self:UpdateMouselook(toState, 'ToggleActionMode')
 end
 
@@ -300,24 +300,12 @@ function IA:CURSOR_UPDATE(event, ...)
 	-- event is not sent twice when moving over an actionable object:  hidden -> show hand cursor -> action cursor
 	-- event is NOT sent when hiding cursor
 	--]]
-	local actives = self.activeCommands
-	local lastState = actives.CursorPickup or actives.SpellIsTargeting
-	-- actives.CursorHasItem = CursorHasItem()
-	actives.CursorPickup = GetCursorInfo()
-	-- actives.CursorPickup = CursorHasItem()  or  CursorHasMacro()  or  CursorHasMoney()  or  CursorHasSpell()
-	actives.SpellIsTargeting = SpellIsTargeting()
-	-- actives.CursorObjectOrSpellTargeting = actives.CursorPickup or actives.SpellIsTargeting
-	local newState = actives.CursorPickup or actives.SpellIsTargeting
-
-	Log.Event(event, '  -> CursorPickup=' .. IA.colorBoolStr(actives.CursorPickup, false) .. '  SpellIsTargeting=' .. IA.colorBoolStr(actives.SpellIsTargeting, false))
-	if lastState ~= newState then
-		if newState then  actives.ActionModeRecent = nil  end    -- There is a more recent event now.
-		self:UpdateMouselook(not newState, 'CURSOR_UPDATE')
-	end
+	Log.Event(event, '  -> CursorPickup=' .. IA.colorBoolStr(CursorHasItem(), false) .. '  SpellIsTargeting=' .. IA.colorBoolStr(SpellIsTargeting(), false))
+	self:UpdateTempCursor(event)
 end
 
 
-IA.CURRENT_SPELL_CAST_CHANGED = IA.UpdateSpellIsTargeting
+IA.CURRENT_SPELL_CAST_CHANGED = IA.UpdateTempCursor
 
 
 --[[
@@ -338,7 +326,7 @@ IA.CURRENT_SPELL_CAST_CHANGED = IA.UpdateSpellIsTargeting
 --]]
 
 function IA:PET_BAR_UPDATE(event)
-	-- Log.Event(event, '  -> CursorPickup=' .. IA.colorBoolStr(actives.CursorPickup, false) .. '  SpellIsTargeting=' .. IA.colorBoolStr(actives.SpellIsTargeting, false))
+	Log.Event(event, '  -> CursorPickup=' .. IA.colorBoolStr(CursorHasItem(), false) .. '  SpellIsTargeting=' .. IA.colorBoolStr(SpellIsTargeting(), false))
 end
 
 --[[ No need for these to my best knowledge. CURSOR_UPDATE handles it.

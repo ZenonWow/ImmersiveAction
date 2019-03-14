@@ -47,6 +47,7 @@ IA.logging = {
 	-- Logging of frames shown and hidden.
 	-- Frame   = true,
 }
+
 IA.logging.Event = {
 	-- all = false,		-- set to false/true to override individual event settings.
 	-- all = true,
