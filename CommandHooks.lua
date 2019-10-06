@@ -105,7 +105,7 @@ function IA:UpdateTempCursor(cmdName)
 	if actives.TempCursor == TempCursor then  return  end
 
 	actives.TempCursor = TempCursor
-	if TempCursor then  self:SetActionModeTemp(nil)  end    -- There is a more recent event now.
+	if TempCursor then  self:ResetActionModeRecent()  end    -- There is a more recent event now.
 	self:UpdateMouselook(not TempCursor, cmdName)
 end
 

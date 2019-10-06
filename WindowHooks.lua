@@ -63,7 +63,7 @@ function IA.FrameOnShow(frame)
 
 	local actives = IA.activeCommands
 	actives.WindowOnScreen = frame:GetName() or G.tostring(frame)
-	IA:SetActionModeTemp(nil)    -- There is a more recent event now.
+	IA:ResetActionModeRecent()    -- There is a more recent event now.
 	IA:UpdateMouselook(false, 'FrameOnShow')
 end
 

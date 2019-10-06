@@ -106,7 +106,7 @@ end
 function IA:SetActionMode(enable, permanent)
 	local actives = self.activeCommands
 	if permanent then  actives.ActionMode = enable  end
-	actives.ActionModeTempCam = (enable==false) and not permanent
+	actives.ActionModeTempCam = not enable  and  not permanent
 	actives.ActionModeRecent = enable and actives.ActionMode
 	self.UserBindings:UpdateActionModeBindings()
 end
@@ -123,6 +123,11 @@ function IA:SetActionModeTemp(enable)
 	self.UserBindings:UpdateActionModeBindings(enable)
 end
 --]]
+
+function IA:ResetActionModeRecent()
+	self.activeCommands.ActionModeRecent = nil
+	self.UserBindings:UpdateActionModeBindings()
+end
 
 
 
