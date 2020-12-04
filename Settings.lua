@@ -281,7 +281,7 @@ Config.optionsTableList = {
 	optToggle("enableWithMoveKeys", "Enable while moving", "While pressing any movement key the mouse will turn the camera and your character."),
 	optToggle("disableWithLookAround", "Disable with Left click", "Pressing LeftButton (turning the camera) will disable ActionMode."),
 	optToggle("enableAfterTurning", "Enable with Right click", "Pressing RightButton (turning your character) will enable ActionMode."),
-	optToggle("enableAfterMoveAndSteer", "Enable with Move and steer", "Pressing MoveAndSteer will enabled ActionMode."),
+	optToggle("enableAfterMoveAndSteer", "Enable with Move and steer", "Pressing MoveAndSteer will enable ActionMode."),
 	-- optToggle("actionModeMoveWithCameraButton", "Move with LeftButton", "Effective in ActionMode:  You will move forward while pressing LeftButton. Try RightButton as well, and the two together (MouseCursorMode, LookAroundMode)"),
 	optToggle("preventSingleClickMouseover", "Prevent accidental rightclick over units", "Single rightclick over units won't attack/interact the mouseover unit.\n".."Double-click to interact."),
 	optToggle("preventSingleClick", "Prevent accidental rightclick everywhere", "Single rightclick won't attack/interact or click objects.\n".."Double-click to interact."),
